@@ -6,17 +6,18 @@ const useLogout = () => {
 
   const logout = async () => {
     try {
-      const sessionId = localStorage.getItem('sessionId');
+      // Retrieve the JWT token from localStorage
+      const jwtToken = localStorage.getItem('jwt_token');
 
-      await axios.post('https://ibon-server-0c0c6dfbe0a0.herokuapp.com/api/auth/logout', {}, {
+      await axios.post('http://localhost:8000/api/auth/logout', {}, {
         headers: {
-          'Authorization': `Bearer ${sessionId}`
+          'Authorization': `Bearer ${jwtToken}` // Use the JWT token here
         }
       });
-  
-  
-      localStorage.removeItem('sessionId');
-      navigate('/LandingPage');
+
+      // Remove the JWT token from localStorage
+      localStorage.removeItem('jwt_token');
+      navigate('/LandingPage'); // Redirect to the landing page after logout
     } catch (error) {
       console.error('Error during logout:', error);
     }

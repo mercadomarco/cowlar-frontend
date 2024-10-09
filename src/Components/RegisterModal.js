@@ -9,7 +9,8 @@ import { Circles } from 'react-loader-spinner';
 const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
   const { passwordVisible, togglePasswordVisibility } = usePasswordToggle();
   const {
-    fullName,
+    firstName,
+    lastName,
     email,
     password,
     errors,
@@ -17,10 +18,12 @@ const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
     isSuccess,
     showSpinner,
     resetButton,
-    handleFullNameChange,
+    handleFirstNameChange,
+    handleLastNameChange,
     handleEmailChange,
     handlePasswordChange,
-    setFullName,
+    setFirstName,
+    setLastName,
     setEmail,
     setPassword,
     setErrors,
@@ -31,7 +34,8 @@ const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
   } = useRegisterForm();
 
   const { handleRegister } = useHandleRegister(
-    fullName,
+    firstName,
+    lastName,
     email,
     password,
     errors,
@@ -40,21 +44,23 @@ const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
     setIsSuccess,
     setShowSpinner,
     setResetButton,
-    setFullName,
+    setFirstName,
+    setLastName,
     setEmail,
     setPassword
   );
 
   const handleClose = () => {
-    setFullName('');
+    setFirstName('');
+    setLastName('');
     setEmail('');
     setPassword('');
-    setErrors({ fullName: '', email: '', password: '' });
+    setErrors({ firstName: '', lastName: '', email: '', password: '' });
     setIsLoading(false);
     setIsSuccess(false);
     setShowSpinner(false);
     setResetButton(false);
-    onClose(); 
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -65,16 +71,27 @@ const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
         <CloseButton onClick={handleClose}>×</CloseButton>
         <ModalTitle>Register</ModalTitle>
         <RegisterForm onSubmit={handleRegister}>
-          <Label htmlFor="fullName">Full Name</Label>
+          <Label htmlFor="firstName">First Name</Label>
           <InputField
             type="text"
-            id="fullName"
-            placeholder="Full Name"
-            value={fullName}
-            onChange={handleFullNameChange}
+            id="firstName"
+            placeholder="First Name"
+            value={firstName}
+            onChange={handleFirstNameChange}
             required
           />
-          {errors.fullName && <ErrorText>{errors.fullName}</ErrorText>}
+          {errors.firstName && <ErrorText>{errors.firstName}</ErrorText>}
+
+          <Label htmlFor="lastName">Last Name</Label>
+          <InputField
+            type="text"
+            id="lastName"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={handleLastNameChange}
+            required
+          />
+          {errors.lastName && <ErrorText>{errors.lastName}</ErrorText>}
 
           <Label htmlFor="email">Email</Label>
           <InputField
@@ -111,7 +128,6 @@ const RegisterModal = ({ isOpen, onClose, openLoginModal }) => {
                 color="#ffffff"
                 ariaLabel="circles-loading"
                 wrapperStyle={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                wrapperClass=""
               />
             ) : isSuccess ? (
               <FaCheck />

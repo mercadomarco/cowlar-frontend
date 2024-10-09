@@ -21,17 +21,20 @@ const useLogin = () => {
     setLoading(true);
   
     try {
-      const response = await axios.post('https://ibon-server-0c0c6dfbe0a0.herokuapp.com/api/auth/login', { email, password });
+      // Make POST request to the server for login
+      const response = await axios.post('http://localhost:8000/api/auth/login', { email, password });
       console.log('Login successful:', response);
-  
-      localStorage.setItem('sessionId', response.data.sessionId);
-  
+
+      // Store JWT token in localStorage
+      localStorage.setItem('jwt_token', response.data.token);
+      
       setTimeout(() => {
         setLoading(false);
         navigate('/Dashboard');
       }, 4000);
     } catch (error) {
-      setError(error.response ? error.response.data.message : 'Login failed');
+      // Handle error response from the server
+      setError(error.response ? error.response.data.error : 'Login failed');
       setLoading(false);
     }
   };

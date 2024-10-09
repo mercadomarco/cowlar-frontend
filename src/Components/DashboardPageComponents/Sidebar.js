@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FaDove, FaFeather, FaUsers } from 'react-icons/fa';
-import Logo from '../../Assests/logo.svg';
+import { FaConfluence, FaDove, FaFeather, FaLock, FaUsers } from 'react-icons/fa';
+import Logo from '../../Assests/cowlogo.png';
+import { FaCow, FaLocationPin } from 'react-icons/fa6';
 
 const Sidebar = ({ onSelect }) => {
   const [selectedItem, setSelectedItem] = useState(''); // Track selected item
@@ -18,6 +19,34 @@ const Sidebar = ({ onSelect }) => {
       </LogoContainer>
       <NavItems>
         <NavItem
+          onClick={() => handleSelect('Geofence')}
+          $isSelected={selectedItem === 'Geofence'}
+        >
+          <FaLock className="icon" />
+          Geofence
+        </NavItem>
+        <NavItem
+          onClick={() => handleSelect('Cows')}
+          $isSelected={selectedItem === 'Cows'}
+        >
+          <FaCow className="icon" />
+          Cows
+        </NavItem>
+        <NavItem
+          onClick={() => handleSelect('CowsLocation')}
+          $isSelected={selectedItem === 'CowsLocation'}
+        >
+        <FaLocationPin className="icon" />
+          Cows Locations
+        </NavItem>
+        <NavItem
+          onClick={() => handleSelect('Breaches')}
+          $isSelected={selectedItem === 'Breaches'}
+        >
+        <FaConfluence className="icon" />
+          Breaches
+        </NavItem>
+        {/* <NavItem
           onClick={() => handleSelect('CountBirds')}
           $isSelected={selectedItem === 'CountBirds'} // Use $isSelected for styled-components
         >
@@ -37,7 +66,7 @@ const Sidebar = ({ onSelect }) => {
         >
           <FaUsers className="icon" />
           Community
-        </NavItem>
+        </NavItem> */}
       </NavItems>
     </SidebarContainer>
   );
@@ -71,7 +100,7 @@ const LogoContainer = styled.div`
 `;
 
 const LogoImage = styled.img`
-  width: 100px;
+  width: 180px;
   height: auto;
 `;
 

@@ -28,7 +28,7 @@ const Navbar = ({ scrollToSection, refs }) => {
   return (
     <>
       <NavbarContainer scrolled={scrolled}>
-        <Logo scrolled={scrolled}>IBON</Logo>
+        <Logo scrolled={scrolled}>CowLar</Logo>
         <NavLinks >
           <NavLink scrolled={scrolled} onClick={() => scrollToSection(refs.heroRef)}>Home</NavLink>
           <NavLink scrolled={scrolled} onClick={() => scrollToSection(refs.featuresRef)}>Features</NavLink>
@@ -71,7 +71,7 @@ const NavbarContainer = styled.nav`
 const Logo = styled.div`
   font-size: 26px;
   font-weight: 400;
-  margin-left: 4.6rem;
+  margin-left: 3.6rem;
   color: ${({ scrolled }) => (scrolled ? '#333' : '#ffffff')};
   cursor: pointer;
 `;

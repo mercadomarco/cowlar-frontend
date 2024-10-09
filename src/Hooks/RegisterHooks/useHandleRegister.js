@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const useHandleRegister = (
-  fullName,
+  firstName,
+  lastName,
   email,
   password,
   errors,
@@ -10,13 +11,14 @@ const useHandleRegister = (
   setIsSuccess,
   setShowSpinner,
   setResetButton,
-  setFullName,
+  setFirstName,
+  setLastName,
   setEmail,
   setPassword
 ) => {
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (errors.fullName || errors.email || errors.password) {
+    if (errors.firstName || errors.lastName || errors.email || errors.password) {
       return; 
     }
     setIsLoading(true);
@@ -26,17 +28,23 @@ const useHandleRegister = (
 
     setTimeout(async () => {
       try {
-        const response = await axios.post('https://ibon-server-0c0c6dfbe0a0.herokuapp.com/api/auth/register', {
-          fullName,
+        // Adjust the payload to match the backend
+        const response = await axios.post('http://localhost:8000/api/auth/register', {
           email,
-          password
+          password,
+          first_name: firstName, // Send first_name
+          last_name: lastName,   // Send last_name
         });
+
         console.log(response.data.message);
         setIsSuccess(true);
-        setFullName('');
+
+        // Clear form inputs
+        setFirstName('');
+        setLastName('');
         setEmail('');
         setPassword('');
-        setErrors({ fullName: '', email: '', password: '' });
+        setErrors({ firstName: '', lastName: '', email: '', password: '' });
 
         setTimeout(() => {
           setIsSuccess(false);
@@ -45,7 +53,7 @@ const useHandleRegister = (
       } catch (error) {
         setErrors((prevErrors) => ({
           ...prevErrors,
-          email: error.response ? error.response.data.message : 'An error occurred'
+          email: error.response ? error.response.data.error : 'An error occurred'
         }));
         setTimeout(() => {
           setErrors((prevErrors) => ({

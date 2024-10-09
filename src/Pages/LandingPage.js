@@ -29,7 +29,7 @@ const LandingPage = () => {
      <Section ref={heroRef}>
         <Hero />
       </Section>
-      <Section ref={featuresRef}>
+      {/* <Section ref={featuresRef}>
         <Features />
       </Section>
       <Section ref={howItWorksRef}>
@@ -40,7 +40,7 @@ const LandingPage = () => {
       </Section>
       <Section ref={aboutRef}>
         <About />
-      </Section>
+      </Section> */}
     </HomePageContainer>
   );
 }

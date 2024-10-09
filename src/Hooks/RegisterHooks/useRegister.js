@@ -2,23 +2,45 @@ import { useState } from 'react';
 import useValidation from '../AuthValidation/useValidation';
 
 const useRegisterForm = () => {
-  const [fullName, setFullName] = useState('');
+  // State for form inputs
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({fullName: '',email: '',password: ''});
+
+  // State for form errors
+  const [errors, setErrors] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+  });
+
+  // Loading and success indicators
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showSpinner, setShowSpinner] = useState(false);
   const [resetButton, setResetButton] = useState(false);
 
-  const { validateFullName, validateEmail, validatePassword } = useValidation();
+  // Validation functions
+  const { validateFirstName, validateLastName, validateEmail, validatePassword } = useValidation();
 
-  const handleFullNameChange = (e) => {
+  // Handle input changes and validate
+  const handleFirstNameChange = (e) => {
     const value = e.target.value;
-    setFullName(value);
+    setFirstName(value);
     setErrors((prevErrors) => ({
       ...prevErrors,
-      fullName: validateFullName(value)
+      firstName: validateFirstName(value),
+    }));
+  };
+
+  const handleLastNameChange = (e) => {
+    const value = e.target.value;
+    setLastName(value);
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      lastName: validateLastName(value),
     }));
   };
 
@@ -27,7 +49,7 @@ const useRegisterForm = () => {
     setEmail(value);
     setErrors((prevErrors) => ({
       ...prevErrors,
-      email: validateEmail(value)
+      email: validateEmail(value),
     }));
   };
 
@@ -36,12 +58,13 @@ const useRegisterForm = () => {
     setPassword(value);
     setErrors((prevErrors) => ({
       ...prevErrors,
-      password: validatePassword(value)
+      password: validatePassword(value),
     }));
   };
 
   return {
-    fullName,
+    firstName,
+    lastName,
     email,
     password,
     errors,
@@ -49,7 +72,8 @@ const useRegisterForm = () => {
     isSuccess,
     showSpinner,
     resetButton,
-    setFullName,
+    setFirstName,
+    setLastName,
     setEmail,
     setPassword,
     setErrors,
@@ -57,7 +81,8 @@ const useRegisterForm = () => {
     setIsSuccess,
     setShowSpinner,
     setResetButton,
-    handleFullNameChange,
+    handleFirstNameChange,
+    handleLastNameChange,
     handleEmailChange,
     handlePasswordChange,
   };

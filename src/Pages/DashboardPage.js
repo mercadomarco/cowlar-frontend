@@ -1,30 +1,39 @@
 import React, { useState } from "react";
 import Sidebar from "../Components/DashboardPageComponents/Sidebar";
 import styled from "styled-components";
-import CountBirds from "../Components/DashboardPageComponents/CountBirds";
 import BirdSpecies from "../Components/DashboardPageComponents/BirdSpecies";
 import CommunityChat from "../Components/DashboardPageComponents/CommunityChat";
 import ProfileNavbar from "../Components/DashboardPageComponents/profileNavbar";
-import UserProfile from "../Components/ProfileComponents/UserProfile"; 
+import UserProfile from "../Components/ProfileComponents/UserProfile";
 import EditProfile from "../Components/ProfileComponents/EditProfile"; // Include EditProfile component
+import Geofence from "../Components/DashboardPageComponents/Geofence";
+import Cows from "../Components/DashboardPageComponents/Cows";
+import CowsLocation from "../Components/DashboardPageComponents/CowsLocation";
+import Breaches from "../Components/DashboardPageComponents/Breaches";
 
 const Dashboard = () => {
-  const [selectedContent, setSelectedContent] = useState('CountBirds');
+  const [selectedContent, setSelectedContent] = useState("Geofence");
 
   const renderContent = () => {
     switch (selectedContent) {
-      case 'CountBirds':
-        return <CountBirds />;
-      case 'BirdSpecies':
-        return <BirdSpecies />;
-      case 'CommunityChat':
-        return <CommunityChat />;
-      case 'UserProfile': 
-      return <UserProfile onSelectContent={setSelectedContent} />;
-      case 'EditProfile': // Render EditProfile component here
+      case "Geofence":
+        return <Geofence />;
+      case "Cows":
+        return <Cows />;
+      case "CowsLocation":
+        return <CowsLocation />;
+        case "Breaches":
+          return <Breaches />;
+      // case "BirdSpecies":
+      //   return <BirdSpecies />;
+      // case "CommunityChat":
+      //   return <CommunityChat />;
+      case "UserProfile":
+        return <UserProfile onSelectContent={setSelectedContent} />;
+      case "EditProfile": // Render EditProfile component here
         return <EditProfile />;
       default:
-        return <CountBirds />;
+        return <Geofence />;
     }
   };
 
@@ -51,7 +60,7 @@ const Content = styled.div`
   flex-grow: 1;
   margin-left: 240px;
   height: 100vh;
-  background-color: #F4F7F9;
+  background-color: #f4f7f9;
   padding: 20px;
   box-sizing: border-box;
   overflow-y: auto;

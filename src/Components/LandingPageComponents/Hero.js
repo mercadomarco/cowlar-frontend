@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useSpring, animated } from 'react-spring'; 
-import Background from '../../Assests/bird2.jpg';
+import Background from '../../Assests/cow2.jpg';
 import useAuthForm from '../../Hooks/AuthenticationHooks/useAuthForm';
 import LoginModal from '../LoginModal';
 import RegisterModal from '../RegisterModal';
@@ -27,8 +27,8 @@ const Hero = () => {
     <>
       <HeroSection style={{ backgroundImage: `url(${Background})` }}>
         <ContentContainer style={contentAnimation}>
-          <HeroHeading>Discover and Count Birds with iBon</HeroHeading>
-          <HeroSubheading>Upload your bird photos or videos, and let our iBon do the rest.</HeroSubheading>
+          <HeroHeading>CowLar Virtual Geofence</HeroHeading>
+          <HeroSubheading>Track and manage your cows realtime.</HeroSubheading>
           <CTAButton onClick={openLoginModal}>Get Started</CTAButton>
         </ContentContainer>
       </HeroSection>

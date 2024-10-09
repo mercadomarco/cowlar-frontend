@@ -1,0 +1,368 @@
+// ...other imports
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import { Circles } from "react-loader-spinner";
+import useCows from "../../Hooks/Cows/useCows";
+import useCollars from "../../Hooks/Collars/useCollars";
+
+const Cows = () => {
+  const { cows, loading, error, addCow } = useCows();
+  const { addCollar } = useCollars();
+  const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
+  const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
+  const [newCow, setNewCow] = useState({ name: "", breed: "", age: "" });
+  const [collarData, setCollarData] = useState({
+    cowId: "",
+    latitude: "",
+    longitude: "",
+  });
+  const [addError, setAddError] = useState(null);
+  const [collarError, setCollarError] = useState(null);
+
+  // Fetch cows for the dropdown
+  useEffect(() => {
+    if (!loading) {
+      setCollarData((prev) => ({
+        ...prev,
+        cowId: cows.length > 0 ? cows[0].cow_id : "",
+      }));
+    }
+  }, [cows, loading]);
+
+  if (loading) {
+    return (
+      <LoaderContainer>
+        <Circles
+          height="40"
+          width="40"
+          color="#121481"
+          ariaLabel="circles-loading"
+          visible={true}
+        />
+      </LoaderContainer>
+    );
+  }
+
+  if (error) {
+    return <ErrorMessage>Error: {error}</ErrorMessage>;
+  }
+
+  const handleAddCow = async (e) => {
+    e.preventDefault();
+    setAddError(null);
+
+    // Input validation
+    if (!newCow.name || !newCow.breed || !newCow.age) {
+      setAddError("All fields are required.");
+      return;
+    }
+
+    try {
+      await addCow(newCow.name, newCow.breed, newCow.age);
+      setNewCow({ name: "", breed: "", age: "" });
+      setIsAddCowModalOpen(false);
+    } catch (err) {
+      setAddError(err.message);
+    }
+  };
+
+  const handleAddCollar = async (e) => {
+    e.preventDefault();
+    setCollarError(null);
+
+    // Input validation
+    if (!collarData.cowId || !collarData.latitude || !collarData.longitude) {
+      setCollarError("All fields are required.");
+      return;
+    }
+
+    try {
+      await addCollar(
+        collarData.cowId,
+        collarData.latitude,
+        collarData.longitude
+      );
+      setCollarData({ cowId: "", latitude: "", longitude: "" });
+      setIsCollarModalOpen(false);
+    } catch (err) {
+      setCollarError(err.message);
+    }
+  };
+
+  return (
+    <Container>
+      <Header>
+        <Title>My Cows</Title>
+        <ButtonGroup>
+          <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>Add Cow</AddCowButton>
+          <AddCollarButton onClick={() => setIsCollarModalOpen(true)}>Add Collar</AddCollarButton>
+        </ButtonGroup>
+      </Header>
+
+      {/* Modal for adding a new cow */}
+      {isAddCowModalOpen && (
+        <ModalOverlay>
+          <Modal>
+            <ModalHeader>
+              <ModalTitle>Add a New Cow</ModalTitle>
+              <CloseButton onClick={() => setIsAddCowModalOpen(false)}>X</CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <AddCowForm onSubmit={handleAddCow}>
+                <Input
+                  type="text"
+                  placeholder="Name"
+                  value={newCow.name}
+                  onChange={(e) => setNewCow({ ...newCow, name: e.target.value })}
+                  required
+                />
+                <Input
+                  type="text"
+                  placeholder="Breed"
+                  value={newCow.breed}
+                  onChange={(e) => setNewCow({ ...newCow, breed: e.target.value })}
+                  required
+                />
+                <Input
+                  type="number"
+                  placeholder="Age"
+                  value={newCow.age}
+                  onChange={(e) => setNewCow({ ...newCow, age: e.target.value })}
+                  required
+                />
+                <SubmitButton type="submit">Add Cow</SubmitButton>
+                {addError && <ErrorMessage>Error: {addError}</ErrorMessage>}
+              </AddCowForm>
+            </ModalBody>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* Modal for adding a collar */}
+      {isCollarModalOpen && (
+        <ModalOverlay>
+          <Modal>
+            <ModalHeader>
+              <ModalTitle>Add a Collar</ModalTitle>
+              <CloseButton onClick={() => setIsCollarModalOpen(false)}>X</CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <AddCollarForm onSubmit={handleAddCollar}>
+                <label htmlFor="cowId">Cow:</label>
+                <Select
+                  id="cowId"
+                  value={collarData.cowId}
+                  onChange={(e) => setCollarData({ ...collarData, cowId: e.target.value })}
+                >
+                  <option value="" disabled>Select a cow</option>
+                  {cows.map((cow) => (
+                    <option key={cow.cow_id} value={cow.cow_id}>
+                      {cow.name}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  type="text"
+                  placeholder="Latitude"
+                  value={collarData.latitude}
+                  onChange={(e) => setCollarData({ ...collarData, latitude: e.target.value })}
+                  required
+                />
+                <Input
+                  type="text"
+                  placeholder="Longitude"
+                  value={collarData.longitude}
+                  onChange={(e) => setCollarData({ ...collarData, longitude: e.target.value })}
+                  required
+                />
+                <SubmitButton type="submit">Add Collar</SubmitButton>
+                {collarError && <ErrorMessage>Error: {collarError}</ErrorMessage>}
+              </AddCollarForm>
+            </ModalBody>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* Display cows or no cows message */}
+      {cows.length === 0 ? (
+        <NoCowsMessage>No cows available</NoCowsMessage>
+      ) : (
+        <CowsList>
+          {cows.map((cow) => (
+            <CowItem key={cow.cow_id}>
+              <p>Name: {cow.name}</p>
+              <p>Breed: {cow.breed}</p>
+              <p>Age: {cow.age}</p>
+            </CowItem>
+          ))}
+        </CowsList>
+      )}
+    </Container>
+  );
+};
+
+export default Cows;
+
+// Styled components for the layout and design
+const LoaderContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+`;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+  margin-top: 30px;
+  overflow-y: auto;
+  font-family: "Poppins", sans-serif;
+`;
+
+const Header = styled.header`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const Title = styled.h1`
+  font-size: 2em;
+  color: #333;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const AddCowButton = styled.button`
+  background-color: #121481;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #0f1a6d;
+  }
+`;
+
+const AddCollarButton = styled.button`
+  background-color: #121481;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #0f1a6d;
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Modal = styled.div`
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+`;
+
+const ModalBody = styled.div`
+  margin-top: 10px;
+`;
+
+const AddCowForm = styled.form`
+  display: flex;
+  flex-direction: column;
+`;
+
+const AddCollarForm = styled.form`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Input = styled.input`
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+`;
+
+const Select = styled.select`
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+`;
+
+const SubmitButton = styled.button`
+  background-color: #121481;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #0f1a6d;
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: red;
+  margin-top: 10px;
+`;
+
+const NoCowsMessage = styled.div`
+  text-align: center;
+  font-size: 1.5em;
+  color: #777;
+`;
+
+const CowsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+`;
+
+const CowItem = styled.div`
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  width: 96%; /* Ensures full width */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+`;
