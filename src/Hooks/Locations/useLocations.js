@@ -44,6 +44,14 @@ const useLocations = () => {
     // Only fetch locations if farmerId is valid
     if (farmerId) {
       fetchLocations(farmerId); // Fetch locations with the farmerId
+
+      // Set up interval to fetch locations every 8 seconds
+      // const intervalId = setInterval(() => {
+      //   fetchLocations(farmerId);
+      // }, 10000); // 8000 milliseconds = 8 seconds
+
+      // Clear interval on component unmount
+      // return () => clearInterval(intervalId);
     } else {
       console.log('farmerId is null or undefined, skipping fetch'); // Log if farmerId is invalid
     }
@@ -53,4 +61,3 @@ const useLocations = () => {
 };
 
 export default useLocations;
- 
