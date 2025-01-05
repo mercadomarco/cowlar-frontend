@@ -10,7 +10,7 @@ const Cows = () => {
   const { addCollar } = useCollars();
   const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
   const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
-  const [newCow, setNewCow] = useState({ name: "", breed: "", age: "" });
+  const [newCow, setNewCow] = useState({ name: "", breed: "", age: "", birthday: "" });
   const [collarData, setCollarData] = useState({
     cowId: "",
     latitude: "",
@@ -52,14 +52,14 @@ const Cows = () => {
     setAddError(null);
 
     // Input validation
-    if (!newCow.name || !newCow.breed || !newCow.age) {
+    if (!newCow.name || !newCow.breed || !newCow.age || !newCow.birthday) {
       setAddError("All fields are required.");
       return;
     }
 
     try {
-      await addCow(newCow.name, newCow.breed, newCow.age);
-      setNewCow({ name: "", breed: "", age: "" });
+      await addCow(newCow.name, newCow.breed, newCow.age, newCow.birthday);
+      setNewCow({ name: "", breed: "", age: "", birthday: "" });
       setIsAddCowModalOpen(false);
     } catch (err) {
       setAddError(err.message);
@@ -130,6 +130,13 @@ const Cows = () => {
                   onChange={(e) => setNewCow({ ...newCow, age: e.target.value })}
                   required
                 />
+                 <Input
+                  type="text"
+                  placeholder="Birthday"
+                  value={newCow.birthday}
+                  onChange={(e) => setNewCow({ ...newCow, birthday: e.target.value })}
+                  required
+                />
                 <SubmitButton type="submit">Add Cow</SubmitButton>
                 {addError && <ErrorMessage>Error: {addError}</ErrorMessage>}
               </AddCowForm>
@@ -193,6 +200,7 @@ const Cows = () => {
               <p>Name: {cow.name}</p>
               <p>Breed: {cow.breed}</p>
               <p>Age: {cow.age}</p>
+              <p>Birthday: {cow.birthday}</p>
             </CowItem>
           ))}
         </CowsList>

@@ -66,7 +66,7 @@ const CowsLocation = () => {
             const detailsElement = document.createElement('div');
             detailsElement.innerHTML = `
               <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);">
-                <h4>${cow.name}</h4>
+                <h4><strong>Name: </strong>${cow.name}</h4>
                 <p><strong>Breed:</strong> ${cow.breed}</p>
                 <p><strong>Age:</strong> ${cow.age}</p>
                 <p><strong>Location:</strong> ${cow.location.latitude}, ${cow.location.longitude}</p>

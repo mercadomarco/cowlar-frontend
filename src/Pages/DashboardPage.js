@@ -9,7 +9,7 @@ import EditProfile from "../Components/ProfileComponents/EditProfile"; // Includ
 import Geofence from "../Components/DashboardPageComponents/Geofence";
 import Cows from "../Components/DashboardPageComponents/Cows";
 import CowsLocation from "../Components/DashboardPageComponents/CowsLocation";
-import Breaches from "../Components/DashboardPageComponents/Breaches";
+import History from "../Components/DashboardPageComponents/History";
 
 const Dashboard = () => {
   const [selectedContent, setSelectedContent] = useState("Geofence");
@@ -22,8 +22,8 @@ const Dashboard = () => {
         return <Cows />;
       case "CowsLocation":
         return <CowsLocation />;
-        case "Breaches":
-          return <Breaches />;
+        case "History":
+          return <History />;
       // case "BirdSpecies":
       //   return <BirdSpecies />;
       // case "CommunityChat":

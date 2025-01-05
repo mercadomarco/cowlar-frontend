@@ -1,15 +1,17 @@
-import React, { useRef, useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { Map as OLMap, View } from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import VectorLayer from 'ol/layer/Vector';
-import VectorSource from 'ol/source/Vector';
-import OSM from 'ol/source/OSM';
-import { Draw, Modify } from 'ol/interaction';
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
-import { toLonLat } from 'ol/proj';
-import Modal from './Modal';
-import 'ol/ol.css';
+import React, { useRef, useEffect, useState } from "react";
+import styled from "styled-components";
+import { Map as OLMap, View } from "ol";
+import TileLayer from "ol/layer/Tile";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import OSM from "ol/source/OSM";
+import { Draw, Modify } from "ol/interaction";
+import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import { toLonLat, fromLonLat } from "ol/proj";
+import LineString from "ol/geom/LineString";
+import Feature from "ol/Feature";
+import Modal from "./Modal";
+import "ol/ol.css";
 
 const Popup = styled.div`
   position: absolute;
@@ -18,7 +20,7 @@ const Popup = styled.div`
   padding: 10px;
   border-radius: 5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  z-index: 1000; /* Ensures the popup is on top of other elements */
+  z-index: 1000;
 `;
 
 const Container = styled.div`
@@ -28,7 +30,7 @@ const Container = styled.div`
   padding: 20px;
   margin-top: 30px;
   overflow-y: auto;
-  font-family: 'Poppins', sans-serif;
+  font-family: "Poppins", sans-serif;
 `;
 
 const Header = styled.header`
@@ -63,13 +65,14 @@ const Geofence = () => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const vectorSource = useRef(new VectorSource());
+  const lineSource = useRef(new VectorSource());
   const [features, setFeatures] = useState([]);
   const [highlightedFeature, setHighlightedFeature] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
   const [featureToDelete, setFeatureToDelete] = useState(null);
   const [popupCoords, setPopupCoords] = useState(null);
-  const [draw, setDraw] = useState(null); // State for draw interaction
+  const [draw, setDraw] = useState(null);
 
   useEffect(() => {
     if (!mapInstance.current) {
@@ -84,48 +87,73 @@ const Geofence = () => {
               return new Style({
                 image: new CircleStyle({
                   radius: isHighlighted ? 8 : 5,
-                  fill: new Fill({ color: isHighlighted ? 'red' : 'blue' }),
-                  stroke: new Stroke({ color: 'white', width: 2 }),
+                  fill: new Fill({ color: isHighlighted ? "red" : "blue" }),
+                  stroke: new Stroke({ color: "white", width: 2 }),
                 }),
               });
             },
           }),
+          new VectorLayer({
+            source: lineSource.current,
+            style: new Style({
+              stroke: new Stroke({
+                color: "green",
+                width: 2,
+              }),
+            }),
+          }),
         ],
         view: new View({
-          center: [13510780.61, 1603044.05],
+          center: ([13510780.61, 1603044.05]),
           zoom: 5,
         }),
       });
     }
   }, [highlightedFeature]);
 
+  const updateLineString = () => {
+    const coords = features.map((feature) =>
+      fromLonLat([feature.coords[0], feature.coords[1]])
+    );
+    if (coords.length === 10) {
+      coords.push(coords[0]); // Close the loop
+    }
+    const lineString = new LineString(coords);
+    const lineFeature = new Feature(lineString);
+    lineSource.current.clear(); // Clear previous lines
+    lineSource.current.addFeature(lineFeature);
+  };
+
   useEffect(() => {
     const drawInteraction = new Draw({
       source: vectorSource.current,
-      type: 'Point',
+      type: "Point",
     });
 
-    drawInteraction.on('drawstart', () => {
+    drawInteraction.on("drawstart", () => {
       if (vectorSource.current.getFeatures().length >= 10) {
-        setIsLimitModalOpen(true); // Open max limit modal
-        drawInteraction.setActive(false); // Disable drawing
+        setIsLimitModalOpen(true);
+        drawInteraction.setActive(false);
         return;
       }
     });
 
-    drawInteraction.on('drawend', (event) => {
+    drawInteraction.on("drawend", (event) => {
       if (vectorSource.current.getFeatures().length < 10) {
         const newFeature = event.feature;
         const coords = toLonLat(newFeature.getGeometry().getCoordinates());
         const featureId = Date.now();
         newFeature.setId(featureId);
-        setFeatures((prevFeatures) => [...prevFeatures, { id: featureId, coords }]);
+        setFeatures((prevFeatures) => [
+          ...prevFeatures,
+          { id: featureId, coords },
+        ]);
         setHighlightedFeature(featureId);
       }
     });
 
     mapInstance.current.addInteraction(drawInteraction);
-    setDraw(drawInteraction); // Save the draw interaction to state
+    setDraw(drawInteraction);
 
     return () => {
       mapInstance.current.removeInteraction(drawInteraction);
@@ -134,12 +162,14 @@ const Geofence = () => {
 
   useEffect(() => {
     const modify = new Modify({ source: vectorSource.current });
-    modify.on('modifyend', (event) => {
+    modify.on("modifyend", (event) => {
       const modifiedFeature = event.features.getArray()[0];
       const coords = toLonLat(modifiedFeature.getGeometry().getCoordinates());
       setFeatures((prevFeatures) =>
         prevFeatures.map((feature) =>
-          feature.id === modifiedFeature.getId() ? { ...feature, coords } : feature
+          feature.id === modifiedFeature.getId()
+            ? { ...feature, coords }
+            : feature
         )
       );
     });
@@ -159,11 +189,11 @@ const Geofence = () => {
     };
 
     if (mapInstance.current) {
-      mapInstance.current.on('dblclick', handleDoubleClick);
+      mapInstance.current.on("dblclick", handleDoubleClick);
     }
     return () => {
       if (mapInstance.current) {
-        mapInstance.current.un('dblclick', handleDoubleClick);
+        mapInstance.current.un("dblclick", handleDoubleClick);
       }
     };
   }, []);
@@ -177,18 +207,21 @@ const Geofence = () => {
           prevFeatures.filter((f) => f.id !== featureToDelete)
         );
         setHighlightedFeature(null);
-        // Check the number of features after deletion
         if (vectorSource.current.getFeatures().length < 10) {
-          draw.setActive(true); // Reactivate the drawing interaction
+          draw.setActive(true);
         }
       }
     }
-    setIsDeleteModalOpen(false); // Close the delete modal
+    setIsDeleteModalOpen(false);
   };
 
   const handleLimitModalClose = () => {
-    setIsLimitModalOpen(false); // Close the limit modal
+    setIsLimitModalOpen(false);
   };
+
+  useEffect(() => {
+    updateLineString(); // Update the LineString whenever features change
+  }, [features]);
 
   // Handle feature click to show popup
   useEffect(() => {
@@ -202,11 +235,11 @@ const Geofence = () => {
     };
 
     if (mapInstance.current) {
-      mapInstance.current.on('singleclick', handleSingleClick);
+      mapInstance.current.on("singleclick", handleSingleClick);
     }
     return () => {
       if (mapInstance.current) {
-        mapInstance.current.un('singleclick', handleSingleClick);
+        mapInstance.current.un("singleclick", handleSingleClick);
       }
     };
   }, []);
@@ -220,8 +253,11 @@ const Geofence = () => {
       <InteractiveMap>
         <StyledMapContainer ref={mapRef} />
         {popupCoords && (
-          <Popup style={{ left: `${popupCoords[0]}px`, top: `${popupCoords[1]}px` }}>
-            Longitude: {popupCoords[0].toFixed(6)}, Latitude: {popupCoords[1].toFixed(6)}
+          <Popup
+            style={{ left: `${popupCoords[0]}px`, top: `${popupCoords[1]}px` }}
+          >
+            Longitude: {popupCoords[0].toFixed(6)}, Latitude:{" "}
+            {popupCoords[1].toFixed(6)}
           </Popup>
         )}
       </InteractiveMap>
@@ -230,30 +266,31 @@ const Geofence = () => {
         <h2>Geofence Posts</h2>
         {features.map((feature, index) => (
           <p key={feature.id}>
-            Post {index + 1}: Longitude: {feature.coords[0].toFixed(6)}, Latitude: {feature.coords[1].toFixed(6)}
+            Post {index + 1}: Longitude: {feature.coords[0].toFixed(6)},
+            Latitude: {feature.coords[1].toFixed(6)}
           </p>
         ))}
       </PostList>
 
-      {/* Modal for deletion confirmation */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirmation}
       />
 
-      {/* Modal for max limit notification */}
       <Modal
         isOpen={isLimitModalOpen}
         onClose={handleLimitModalClose}
-        onConfirm={handleLimitModalClose} // No action needed on confirm, just close
+        onConfirm={handleLimitModalClose}
       >
         <h2>Limit Reached</h2>
-        <p>You can only add up to 10 posts. Please delete an existing post to create a new one.</p>
+        <p>
+          You can only add up to 10 posts. Please delete an existing post to
+          create a new one.
+        </p>
       </Modal>
     </Container>
   );
 };
 
 export default Geofence;
-

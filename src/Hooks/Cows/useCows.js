@@ -61,12 +61,12 @@ const useCows = () => {
   }, []); // No dependencies; runs once when the component mounts
 
   // Function to add a cow to the user's list
-  const addCow = async (name, breed, age) => {
+  const addCow = async (name, breed, age, birthday) => {
     const farmerId = localStorage.getItem('farmer_id'); // Retrieve farmerId from local storage
     const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
 
-    if (!name || !breed || !age || !farmerId) {
-      throw new Error('Name, breed, age, and farmerId are required'); // Validate inputs
+    if (!name || !breed || !age || !farmerId || !birthday) {
+      throw new Error('Name, breed, age, birthday and farmerId are required'); // Validate inputs
     }
 
     try {
@@ -76,7 +76,7 @@ const useCows = () => {
           'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
           'Content-Type': 'application/json', // Set content type
         },
-        body: JSON.stringify({ name, breed, age, farmerId }), // Include cow data in the request body
+        body: JSON.stringify({ name, breed, age, farmerId, birthday }), // Include cow data in the request body
       });
 
       if (!response.ok) {

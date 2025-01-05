@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FaConfluence, FaDove, FaFeather, FaLock, FaUsers } from 'react-icons/fa';
+import { FaConfluence, FaDove, FaFeather, FaHistory, FaLock, FaUsers } from 'react-icons/fa';
 import Logo from '../../Assests/cowlogo.png';
 import { FaCow, FaLocationPin } from 'react-icons/fa6';
 
@@ -40,11 +40,11 @@ const Sidebar = ({ onSelect }) => {
           Cows Locations
         </NavItem>
         <NavItem
-          onClick={() => handleSelect('Breaches')}
-          $isSelected={selectedItem === 'Breaches'}
+          onClick={() => handleSelect('History')}
+          $isSelected={selectedItem === 'History'}
         >
-        <FaConfluence className="icon" />
-          Breaches
+        <FaHistory className="icon" />
+          History
         </NavItem>
         {/* <NavItem
           onClick={() => handleSelect('CountBirds')}
