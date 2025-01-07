@@ -15,11 +15,9 @@ const History = ({ filters }) => {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const vectorLayerRef = useRef(null);
+  const [featuresAdded, setFeaturesAdded] = useState(false);
 
   const { history: cowHistory, loading, error } = useCowHistory(filters);
-
-  // State to track whether features have been added to the map
-  const [featuresAdded, setFeaturesAdded] = useState(false);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -46,7 +44,7 @@ const History = ({ filters }) => {
   useEffect(() => {
     if (!mapInstance.current || loading || error || cowHistory.length === 0) return;
 
-    // Initialize the vector layer if not already created
+    // Initialize vector layer if not already added
     if (!vectorLayerRef.current) {
       const vectorLayer = new VectorLayer({
         source: new VectorSource(),
@@ -71,7 +69,7 @@ const History = ({ filters }) => {
         feature.setStyle(
           new Style({
             image: new Icon({
-              src: cowIcon, // Use the imported local icon
+              src: cowIcon,
               scale: 0.05,
             }),
           })
@@ -81,15 +79,12 @@ const History = ({ filters }) => {
       }
     });
 
-    // Only fit the map view if new features are added
-    if (!featuresAdded) {
-      const extent = vectorSource.getExtent();
-      if (extent && !isNaN(extent[0])) {
-        mapInstance.current.getView().fit(extent, { padding: [50, 50, 50, 50] });
-      }
-      setFeaturesAdded(true); // Mark that features have been added
+    // Fit the map view to the features' extent
+    const extent = vectorSource.getExtent();
+    if (extent && !isNaN(extent[0])) {
+      mapInstance.current.getView().fit(extent, { padding: [50, 50, 50, 50] });
     }
-  }, [cowHistory, loading, error, featuresAdded]);
+  }, [cowHistory, loading, error]);
 
   return (
     <div>
