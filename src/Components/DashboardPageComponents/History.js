@@ -4,12 +4,31 @@ import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Point } from 'ol/geom';
+import { Point, LineString } from 'ol/geom';
 import { Feature } from 'ol';
-import { Style, Icon } from 'ol/style';
+import { Style, Icon, Stroke } from 'ol/style';
 import { fromLonLat } from 'ol/proj';
 import cowIcon from '../../Assests/cow_icon.png';
 import useCowHistory from '../../Hooks/CowHistory/usecowHistory';
+
+// Color mapping cache to ensure each collarId gets a unique color
+const collarIdToColorMap = {};
+
+const generateColor = (collarId) => {
+  // If this collarId has already been assigned a color, return it
+  if (collarIdToColorMap[collarId]) {
+    return collarIdToColorMap[collarId];
+  }
+
+  // Otherwise, assign a new color and store it in the map
+  const colors = [
+    '#ff6600', '#00ff00', '#0000ff', '#ff0000', '#ff00ff', '#00ffff', '#ffff00', '#800080', '#008000'
+  ];
+  const index = Math.abs(collarId.charCodeAt(0) % colors.length);
+  const color = colors[index];
+  collarIdToColorMap[collarId] = color;
+  return color;
+};
 
 const History = ({ filters }) => {
   const mapRef = useRef(null);
@@ -56,13 +75,42 @@ const History = ({ filters }) => {
     const vectorSource = vectorLayerRef.current.getSource();
     vectorSource.clear(); // Clear old features
 
-    // Add new features to the vector layer
-    cowHistory.forEach((entry) => {
-      const { longitude, latitude, timestamp } = entry;
+    // Group cows by collarId
+    const groupedByCollar = cowHistory.reduce((acc, entry) => {
+      if (!acc[entry.collarId]) acc[entry.collarId] = [];
+      acc[entry.collarId].push(entry);
+      return acc;
+    }, {});
 
-      if (longitude && latitude) {
+    // Add features for each collar group
+    Object.keys(groupedByCollar).forEach((collarId) => {
+      const group = groupedByCollar[collarId];
+
+      // Create a line between each cow in the same group
+      const coordinates = group.map((entry) => fromLonLat([entry.longitude, entry.latitude]));
+      if (coordinates.length > 1) {
+        const lineFeature = new Feature({
+          geometry: new LineString(coordinates),
+        });
+
+        const lineColor = generateColor(collarId); // Generate color based on collarId
+        lineFeature.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: lineColor,
+              width: 3,
+            }),
+          })
+        );
+        vectorSource.addFeature(lineFeature);
+      }
+
+      // Add cow markers and add hover interaction for each cow
+      group.forEach((entry) => {
+        const { longitude, latitude, timestamp } = entry;
         const feature = new Feature({
           geometry: new Point(fromLonLat([longitude, latitude])),
+          collarId,
           timestamp,
         });
 
@@ -75,8 +123,25 @@ const History = ({ filters }) => {
           })
         );
 
+        // Add hover effect for displaying collar ID and timestamp
+        feature.on('pointermove', (event) => {
+          const element = event.originalEvent.target;
+          element.style.cursor = 'pointer';
+          const tooltip = document.createElement('div');
+          tooltip.className = 'tooltip';
+          tooltip.innerHTML = `Collar ID: ${collarId}<br/>Timestamp: ${timestamp}`;
+          document.body.appendChild(tooltip);
+          tooltip.style.left = `${event.pixel[0] + 10}px`;
+          tooltip.style.top = `${event.pixel[1] + 10}px`;
+        });
+
+        feature.on('mouseout', () => {
+          const tooltips = document.querySelectorAll('.tooltip');
+          tooltips.forEach((tooltip) => tooltip.remove());
+        });
+
         vectorSource.addFeature(feature);
-      }
+      });
     });
 
     // Fit the map view to the features' extent
