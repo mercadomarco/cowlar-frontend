@@ -1,32 +1,17 @@
-
-// src/App.js
-
 import React from 'react';
-import HomePage from './pages/HomePage';
-import './styles/App.css';
+import LandingPage from './Pages/LandingPage';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Dashboard from './Pages/DashboardPage';
 
 function App() {
   return (
-    <div className="App">
-      <HomePage />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/*" element={<LandingPage />} />
+        <Route path="/Dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
   );
-}
+  }
 
 export default App;
-
-// import React from 'react';
-// import WebSocketTest from './components/Test';
-
-// const App = () => {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <h1>React WebSocket Test</h1>
-//         <WebSocketTest />
-//       </header>
-//     </div>
-//   );
-// };
-
-// export default App;
