@@ -215,8 +215,8 @@ const Geofence = () => {
       // Call the addGeofence function from the hook with correct payload
       await addGeofence(boundaryCoordinates);
   
-      // Reset features after saving (optional)
-      setFeatures([]);
+      // Reset features after saving (POST)
+      //setFeatures([]);
     } catch (error) {
       console.error("Error saving geofence:", error);
     }
@@ -244,13 +244,13 @@ const Geofence = () => {
       </InteractiveMap>
 
       <PostList>
-        <h2>Geofence Posts</h2>
+        {/* <h2>Geofence Posts</h2>
         {features.map((feature, index) => (
           <p key={feature.id}>
             Post {index + 1}: Longitude: {feature.coords[0].toFixed(6)},
             Latitude: {feature.coords[1].toFixed(6)}
           </p>
-        ))}
+        ))} */}
       </PostList>
 
       <Modal
