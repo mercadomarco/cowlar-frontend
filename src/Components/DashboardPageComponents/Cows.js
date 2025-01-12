@@ -10,11 +10,15 @@ const Cows = () => {
   const { addCollar } = useCollars();
   const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
   const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
-  const [newCow, setNewCow] = useState({ name: "", breed: "", age: "", birthday: "" });
+  const [newCow, setNewCow] = useState({
+    name: "",
+    breed: "",
+    age: "",
+    birthday: "",
+  });
   const [collarData, setCollarData] = useState({
     cowId: "",
-    latitude: "",
-    longitude: "",
+    collarId: ""
   });
   const [addError, setAddError] = useState(null);
   const [collarError, setCollarError] = useState(null);
@@ -71,18 +75,14 @@ const Cows = () => {
     setCollarError(null);
 
     // Input validation
-    if (!collarData.cowId || !collarData.latitude || !collarData.longitude) {
+    if (!collarData.cowId || !collarData.collarId) {
       setCollarError("All fields are required.");
       return;
     }
 
     try {
-      await addCollar(
-        collarData.cowId,
-        collarData.latitude,
-        collarData.longitude
-      );
-      setCollarData({ cowId: "", latitude: "", longitude: "" });
+      await addCollar(collarData.cowId, collarData.collarId);
+      setCollarData({ cowId: "", collarId: "" });
       setIsCollarModalOpen(false);
     } catch (err) {
       setCollarError(err.message);
@@ -94,8 +94,12 @@ const Cows = () => {
       <Header>
         <Title>My Cows</Title>
         <ButtonGroup>
-          <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>Add Cow</AddCowButton>
-          <AddCollarButton onClick={() => setIsCollarModalOpen(true)}>Add Collar</AddCollarButton>
+          <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>
+            Add Cow
+          </AddCowButton>
+          <AddCollarButton onClick={() => setIsCollarModalOpen(true)}>
+            Link Collar
+          </AddCollarButton>
         </ButtonGroup>
       </Header>
 
@@ -104,8 +108,10 @@ const Cows = () => {
         <ModalOverlay>
           <Modal>
             <ModalHeader>
-              <ModalTitle>Add a New Cow</ModalTitle>
-              <CloseButton onClick={() => setIsAddCowModalOpen(false)}>X</CloseButton>
+              <ModalTitle>Add Cow</ModalTitle>
+              <CloseButton onClick={() => setIsAddCowModalOpen(false)}>
+                X
+              </CloseButton>
             </ModalHeader>
             <ModalBody>
               <AddCowForm onSubmit={handleAddCow}>
@@ -113,28 +119,36 @@ const Cows = () => {
                   type="text"
                   placeholder="Name"
                   value={newCow.name}
-                  onChange={(e) => setNewCow({ ...newCow, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, name: e.target.value })
+                  }
                   required
                 />
                 <Input
                   type="text"
                   placeholder="Breed"
                   value={newCow.breed}
-                  onChange={(e) => setNewCow({ ...newCow, breed: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, breed: e.target.value })
+                  }
                   required
                 />
                 <Input
                   type="number"
                   placeholder="Age"
                   value={newCow.age}
-                  onChange={(e) => setNewCow({ ...newCow, age: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, age: e.target.value })
+                  }
                   required
                 />
-                 <Input
-                  type="text"
+                <Input
+                  type="date"
                   placeholder="Birthday"
                   value={newCow.birthday}
-                  onChange={(e) => setNewCow({ ...newCow, birthday: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, birthday: e.target.value })
+                  }
                   required
                 />
                 <SubmitButton type="submit">Add Cow</SubmitButton>
@@ -151,7 +165,9 @@ const Cows = () => {
           <Modal>
             <ModalHeader>
               <ModalTitle>Add a Collar</ModalTitle>
-              <CloseButton onClick={() => setIsCollarModalOpen(false)}>X</CloseButton>
+              <CloseButton onClick={() => setIsCollarModalOpen(false)}>
+                X
+              </CloseButton>
             </ModalHeader>
             <ModalBody>
               <AddCollarForm onSubmit={handleAddCollar}>
@@ -159,31 +175,34 @@ const Cows = () => {
                 <Select
                   id="cowId"
                   value={collarData.cowId}
-                  onChange={(e) => setCollarData({ ...collarData, cowId: e.target.value })}
+                  onChange={(e) =>
+                    setCollarData({ ...collarData, cowId: e.target.value })
+                  }
                 >
-                  <option value="" disabled>Select a cow</option>
+                  <option value="" disabled>
+                    Select a cow
+                  </option>
                   {cows.map((cow) => (
                     <option key={cow.cow_id} value={cow.cow_id}>
                       {cow.name}
                     </option>
                   ))}
                 </Select>
+                <label htmlFor="collarId">Collar ID:</label>
                 <Input
+                  id="collarId"
                   type="text"
-                  placeholder="Latitude"
+                  placeholder="Enter collar Id"
                   value={collarData.latitude}
-                  onChange={(e) => setCollarData({ ...collarData, latitude: e.target.value })}
-                  required
-                />
-                <Input
-                  type="text"
-                  placeholder="Longitude"
-                  value={collarData.longitude}
-                  onChange={(e) => setCollarData({ ...collarData, longitude: e.target.value })}
+                  onChange={(e) =>
+                    setCollarData({ ...collarData, collarId: e.target.value })
+                  }
                   required
                 />
                 <SubmitButton type="submit">Add Collar</SubmitButton>
-                {collarError && <ErrorMessage>Error: {collarError}</ErrorMessage>}
+                {collarError && (
+                  <ErrorMessage>Error: {collarError}</ErrorMessage>
+                )}
               </AddCollarForm>
             </ModalBody>
           </Modal>
@@ -201,6 +220,7 @@ const Cows = () => {
               <p>Breed: {cow.breed}</p>
               <p>Age: {cow.age}</p>
               <p>Birthday: {cow.birthday}</p>
+              <p>Associated: {cow.associated}</p>
             </CowItem>
           ))}
         </CowsList>
