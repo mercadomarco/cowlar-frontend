@@ -1,128 +1,92 @@
-import { useState } from 'react';
-import axios from 'axios';
+import { useState, useRef, useCallback } from "react";
+import axios from "axios";
+
+const axiosInstance = axios.create({
+  baseURL: process.env.REACT_APP_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 const useGeofence = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [geofences, setGeofences] = useState([]);
-  const farmerId = localStorage.getItem('farmer_id'); // Retrieve farmerId from local storage
+  const farmerId = localStorage.getItem("farmer_id"); 
+  const hasFetchedGeofences = useRef(false); 
 
-  const addGeofence = async (boundaryCoordinates) => {
+  const validateToken = () => {
+    const jwtToken = localStorage.getItem("jwt_token");
+    if (!jwtToken || !farmerId) {
+      throw new Error("Authentication or Farmer ID is missing.");
+    }
+    axiosInstance.defaults.headers["Authorization"] = `Bearer ${jwtToken}`;
+    return jwtToken;
+  };
+
+  const handleApiRequest = async (apiCall, params) => {
     setLoading(true);
     setError(null);
 
     try {
-      if (farmerId) {
-        const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-        console.log('Adding geofence for farmerId:', farmerId); // Log add attempt
+      validateToken();
+      const response = await apiCall(params);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "An unexpected error occurred.");
+      console.error("API Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const response = await axios.post(
-          'http://localhost:8000/api/geofence/add',
-          { farmerId, boundaryCoordinates },
-          {
-            headers: {
-              'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+  const addGeofence = async (coordinates) => {
+    if (!Array.isArray(coordinates) || coordinates.length < 10) {
+      setError("Geofence requires 10 coordinates.");
+      return;
+    }
 
-        console.log(response.data.message); // Log the success message
-      } else {
-        throw new Error('Farmer ID is not available.');
+    const boundaryCoordinates = coordinates.map((coord) => ({
+      latitude: coord.latitude,
+      longitude: coord.longitude,
+    }));
+    // console.log("Received boundaryCoordinates:", boundaryCoordinates);
+
+    const payload = { farmerId: farmerId, boundaryCoordinates: boundaryCoordinates };
+    console.log("Payload: ", payload);
+
+    try {
+      const data = await handleApiRequest(
+        (params) => axiosInstance.post("geofence/add", params),
+        payload
+      );
+      if (data) {
+        console.log(data.message);
       }
     } catch (err) {
-      setError(err.message);
-      console.error('Error adding geofence:', err); // Log the error message
-    } finally {
-      setLoading(false);
+      console.error("Error adding geofence:", err);
     }
   };
 
-  const updateGeofence = async (geofenceId, boundaryCoordinates) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Updating geofenceId:', geofenceId); // Log update attempt
-
-      const response = await axios.post(
-        'http://localhost:8000/api/geofence/update',
-        { geofenceId, boundaryCoordinates },
-        {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      console.log(response.data.message); // Log the success message
-    } catch (err) {
-      setError(err.message);
-      console.error('Error updating geofence:', err); // Log the error message
-    } finally {
-      setLoading(false);
+  const getGeofence = useCallback(async () => {
+    if (hasFetchedGeofences.current) {
+      console.log("Geofences already fetched. Skipping request.");
+      return;
     }
-  };
 
-  const deleteGeofence = async (geofenceId) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Deleting geofenceId:', geofenceId); // Log delete attempt
-
-      const response = await axios.delete(
-        `http://localhost:8000/api/geofence/delete/${geofenceId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-          },
-        }
-      );
-
-      console.log(response.data.message); // Log the success message
-    } catch (err) {
-      setError(err.message);
-      console.error('Error deleting geofence:', err); // Log the error message
-    } finally {
-      setLoading(false);
+    const data = await handleApiRequest(
+      () => axiosInstance.get(`geofence/get/${farmerId}`),
+      null
+    );
+    
+    if (data) {
+      setGeofences(data.geofences);
+      console.log("Geofences retrieved:", data.geofences);
+      hasFetchedGeofences.current = true;
     }
-  };
+  }, [farmerId]);
 
-  // Fetch all geofences for the current farmer
-  const fetchGeofences = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      if (farmerId) {
-        const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-        console.log('Fetching geofences for farmerId:', farmerId); // Log fetch attempt
-
-        const response = await axios.get(`http://localhost:8000/api/geofence/get/${farmerId}`, {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-          },
-        });
-
-        setGeofences(response.data.geofences);
-        console.log('Geofences retrieved:', response.data.geofences); // Log the retrieved geofences
-      } else {
-        throw new Error('Farmer ID is not available.');
-      }
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching geofences:', err); // Log the error message
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { loading, error, geofences, addGeofence, updateGeofence, deleteGeofence, fetchGeofences };
+  return { loading, error, geofences, addGeofence, getGeofence };
 };
 
 export default useGeofence;

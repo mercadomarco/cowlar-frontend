@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "../Components/DashboardPageComponents/Sidebar";
 import styled from "styled-components";
-import BirdSpecies from "../Components/DashboardPageComponents/BirdSpecies";
-import CommunityChat from "../Components/DashboardPageComponents/CommunityChat";
+import GeofenceMap from "../Components/DashboardPageComponents/GeofenceMap";
 import ProfileNavbar from "../Components/DashboardPageComponents/profileNavbar";
 import UserProfile from "../Components/ProfileComponents/UserProfile";
 import EditProfile from "../Components/ProfileComponents/EditProfile"; // Include EditProfile component
@@ -18,6 +17,8 @@ const Dashboard = () => {
     switch (selectedContent) {
       case "Geofence":
         return <Geofence />;
+        case "GeofenceMap":
+          return <GeofenceMap />;
       case "Cows":
         return <Cows />;
       case "CowsLocation":
@@ -33,7 +34,7 @@ const Dashboard = () => {
       case "EditProfile": // Render EditProfile component here
         return <EditProfile />;
       default:
-        return <Geofence />;
+        return <GeofenceMap />;
     }
   };
 
