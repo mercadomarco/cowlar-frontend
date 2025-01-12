@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import axios from "axios";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8000/api/",
+  baseURL: process.env.REACT_APP_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -42,7 +42,7 @@ const useGeofence = () => {
 
   const addGeofence = async (coordinates) => {
     if (!Array.isArray(coordinates) || coordinates.length < 10) {
-      setError("Geofence requires at least 3 coordinates.");
+      setError("Geofence requires 10 coordinates.");
       return;
     }
 
@@ -68,15 +68,7 @@ const useGeofence = () => {
     }
   };
 
-  const deleteGeofence = async (geofenceId) => {
-    const data = await handleApiRequest(
-      (params) => axiosInstance.delete(`geofence/delete/${params}`),
-      geofenceId
-    );
-    if (data) console.log(data.message);
-  };
-
-  const fetchGeofences = useCallback(async () => {
+  const getGeofence = useCallback(async () => {
     if (hasFetchedGeofences.current) {
       console.log("Geofences already fetched. Skipping request.");
       return;
@@ -94,7 +86,7 @@ const useGeofence = () => {
     }
   }, [farmerId]);
 
-  return { loading, error, geofences, addGeofence, deleteGeofence, fetchGeofences };
+  return { loading, error, geofences, addGeofence, getGeofence };
 };
 
 export default useGeofence;

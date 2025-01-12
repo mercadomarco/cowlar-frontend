@@ -26,6 +26,7 @@ const Geofence = () => {
   const [featureToDelete, setFeatureToDelete] = useState(null);
   const [popupCoords, setPopupCoords] = useState(null);
   const [draw, setDraw] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Access addGeofence from the custom hook
   const { addGeofence } = useGeofence();
@@ -201,27 +202,24 @@ const Geofence = () => {
 
   // Call this function when you're ready to save the geofence data
   const handleSaveGeofence = async () => {
-    // Ensure the features array has been populated correctly and boundaryCoordinates is assigned
     const boundaryCoordinates = features.map((feature) => ({
       latitude: feature.coords[1],
       longitude: feature.coords[0],
     }));
-  
-    // Log the boundaryCoordinates for debugging
-    // console.log("Boundary Coordinates:", boundaryCoordinates);
-  
+
     try {
-  
       // Call the addGeofence function from the hook with correct payload
       await addGeofence(boundaryCoordinates);
-  
+      setSuccessMessage("Geofence added or updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 5000);
+
       // Reset features after saving (POST)
       //setFeatures([]);
     } catch (error) {
       console.error("Error saving geofence:", error);
     }
   };
-  
+
   return (
     <Container>
       <Header>
@@ -270,6 +268,7 @@ const Geofence = () => {
           create a new one.
         </p>
       </Modal>
+      {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
 
       {/* Button to save geofence */}
       <SaveButton onClick={handleSaveGeofence}>Save Geofence</SaveButton>
@@ -336,6 +335,17 @@ const PostList = styled.div`
   background: #f9f9f9;
   padding: 10px;
   border-radius: 5px;
+`;
+
+const SuccessMessage = styled.div`
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #dff0d8;
+  color: #3c763d;
+  border: 1px solid #d6e9c6;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
 `;
 
 export default Geofence;
