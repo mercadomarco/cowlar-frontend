@@ -12,54 +12,7 @@ import LineString from "ol/geom/LineString";
 import Feature from "ol/Feature";
 import Modal from "./Modal";
 import "ol/ol.css";
-
-const Popup = styled.div`
-  position: absolute;
-  background: white;
-  border: 1px solid #333;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-`;
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 20px;
-  margin-top: 30px;
-  overflow-y: auto;
-  font-family: "Poppins", sans-serif;
-`;
-
-const Header = styled.header`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Title = styled.h1`
-  font-size: 2em;
-  color: #333;
-`;
-
-const InteractiveMap = styled.div`
-  margin-top: 20px;
-  position: relative;
-`;
-
-const StyledMapContainer = styled.div`
-  width: 100%;
-  height: 400px;
-`;
-
-const PostList = styled.div`
-  margin-top: 20px;
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 5px;
-`;
+import useGeofence from "../../Hooks/Geofence/useGeofence"; // Import your custom hook
 
 const Geofence = () => {
   const mapRef = useRef(null);
@@ -73,6 +26,9 @@ const Geofence = () => {
   const [featureToDelete, setFeatureToDelete] = useState(null);
   const [popupCoords, setPopupCoords] = useState(null);
   const [draw, setDraw] = useState(null);
+
+  // Access addGeofence from the custom hook
+  const { addGeofence } = useGeofence();
 
   useEffect(() => {
     if (!mapInstance.current) {
@@ -243,6 +199,29 @@ const Geofence = () => {
     };
   }, []);
 
+  // Call this function when you're ready to save the geofence data
+  const handleSaveGeofence = async () => {
+    // Ensure the features array has been populated correctly and boundaryCoordinates is assigned
+    const boundaryCoordinates = features.map((feature) => ({
+      latitude: feature.coords[1],
+      longitude: feature.coords[0],
+    }));
+  
+    // Log the boundaryCoordinates for debugging
+    // console.log("Boundary Coordinates:", boundaryCoordinates);
+  
+    try {
+  
+      // Call the addGeofence function from the hook with correct payload
+      await addGeofence(boundaryCoordinates);
+  
+      // Reset features after saving (optional)
+      setFeatures([]);
+    } catch (error) {
+      console.error("Error saving geofence:", error);
+    }
+  };
+  
   return (
     <Container>
       <Header>
@@ -291,8 +270,72 @@ const Geofence = () => {
           create a new one.
         </p>
       </Modal>
+
+      {/* Button to save geofence */}
+      <SaveButton onClick={handleSaveGeofence}>Save Geofence</SaveButton>
     </Container>
   );
 };
+
+const SaveButton = styled.button`
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  &:hover {
+    background-color: #45a049;
+  }
+`;
+
+const Popup = styled.div`
+  position: absolute;
+  background: white;
+  border: 1px solid #333;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+`;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+  margin-top: 30px;
+  overflow-y: auto;
+  font-family: "Poppins", sans-serif;
+`;
+
+const Header = styled.header`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Title = styled.h1`
+  font-size: 2em;
+  color: #333;
+`;
+
+const InteractiveMap = styled.div`
+  margin-top: 20px;
+  position: relative;
+`;
+
+const StyledMapContainer = styled.div`
+  width: 100%;
+  height: 400px;
+`;
+
+const PostList = styled.div`
+  margin-top: 20px;
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 5px;
+`;
 
 export default Geofence;

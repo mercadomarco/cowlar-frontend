@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import axios from "axios";
 
 const axiosInstance = axios.create({
@@ -12,8 +12,8 @@ const useGeofence = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [geofences, setGeofences] = useState([]);
-  const farmerId = localStorage.getItem("farmer_id"); // Retrieve farmerId from localStorage
-  const hasFetchedGeofences = useRef(false); // Flag to prevent multiple fetches
+  const farmerId = localStorage.getItem("farmer_id"); 
+  const hasFetchedGeofences = useRef(false); 
 
   const validateToken = () => {
     const jwtToken = localStorage.getItem("jwt_token");
@@ -24,94 +24,77 @@ const useGeofence = () => {
     return jwtToken;
   };
 
-  const addGeofence = async (boundaryCoordinates) => {
+  const handleApiRequest = async (apiCall, params) => {
     setLoading(true);
     setError(null);
 
     try {
       validateToken();
-
-      const response = await axiosInstance.post("geofence/add", {
-        farmerId,
-        boundaryCoordinates,
-      });
-
-      console.log(response.data.message);
+      const response = await apiCall(params);
+      return response.data;
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error("Error adding geofence:", err);
+      setError(err.response?.data?.message || err.message || "An unexpected error occurred.");
+      console.error("API Error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateGeofence = async (geofenceId, boundaryCoordinates) => {
-    setLoading(true);
-    setError(null);
+  const addGeofence = async (coordinates) => {
+    if (!Array.isArray(coordinates) || coordinates.length < 10) {
+      setError("Geofence requires at least 3 coordinates.");
+      return;
+    }
+
+    const boundaryCoordinates = coordinates.map((coord) => ({
+      latitude: coord.latitude,
+      longitude: coord.longitude,
+    }));
+    // console.log("Received boundaryCoordinates:", boundaryCoordinates);
+
+    const payload = { farmerId: farmerId, boundaryCoordinates: boundaryCoordinates };
+    console.log("Payload: ", payload);
 
     try {
-      validateToken();
-
-      const response = await axiosInstance.post("geofence/update", {
-        geofenceId,
-        boundaryCoordinates,
-      });
-
-      console.log(response.data.message);
+      const data = await handleApiRequest(
+        (params) => axiosInstance.post("geofence/add", params),
+        payload
+      );
+      if (data) {
+        console.log(data.message);
+      }
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error("Error updating geofence:", err);
-    } finally {
-      setLoading(false);
+      console.error("Error adding geofence:", err);
     }
   };
 
   const deleteGeofence = async (geofenceId) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      validateToken();
-
-      const response = await axiosInstance.delete(`geofence/delete/${geofenceId}`);
-
-      console.log(response.data.message);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error("Error deleting geofence:", err);
-    } finally {
-      setLoading(false);
-    }
+    const data = await handleApiRequest(
+      (params) => axiosInstance.delete(`geofence/delete/${params}`),
+      geofenceId
+    );
+    if (data) console.log(data.message);
   };
 
-  const fetchGeofences = async () => {
+  const fetchGeofences = useCallback(async () => {
     if (hasFetchedGeofences.current) {
       console.log("Geofences already fetched. Skipping request.");
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      validateToken();
-
-      const response = await axiosInstance.get(`geofence/get/${farmerId}`);
-
-      setGeofences(response.data.geofences);
-      console.log("Geofences retrieved:", response.data.geofences);
-
-      // Set the flag to true after the first fetch
+    const data = await handleApiRequest(
+      () => axiosInstance.get(`geofence/get/${farmerId}`),
+      null
+    );
+    
+    if (data) {
+      setGeofences(data.geofences);
+      console.log("Geofences retrieved:", data.geofences);
       hasFetchedGeofences.current = true;
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error("Error fetching geofences:", err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [farmerId]);
 
-  return { loading, error, geofences, addGeofence, updateGeofence, deleteGeofence, fetchGeofences };
+  return { loading, error, geofences, addGeofence, deleteGeofence, fetchGeofences };
 };
 
 export default useGeofence;
