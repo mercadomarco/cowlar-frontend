@@ -1,39 +1,45 @@
-import { useState } from 'react';
-import axios from 'axios';
+import { useState, useRef } from "react";
+import axios from "axios";
+
+const axiosInstance = axios.create({
+  baseURL: "http://localhost:8000/api/",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 const useGeofence = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [geofences, setGeofences] = useState([]);
-  const farmerId = localStorage.getItem('farmer_id'); // Retrieve farmerId from local storage
+  const farmerId = localStorage.getItem("farmer_id"); // Retrieve farmerId from localStorage
+  const hasFetchedGeofences = useRef(false); // Flag to prevent multiple fetches
+
+  const validateToken = () => {
+    const jwtToken = localStorage.getItem("jwt_token");
+    if (!jwtToken || !farmerId) {
+      throw new Error("Authentication or Farmer ID is missing.");
+    }
+    axiosInstance.defaults.headers["Authorization"] = `Bearer ${jwtToken}`;
+    return jwtToken;
+  };
 
   const addGeofence = async (boundaryCoordinates) => {
     setLoading(true);
     setError(null);
 
     try {
-      if (farmerId) {
-        const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-        console.log('Adding geofence for farmerId:', farmerId); // Log add attempt
+      validateToken();
 
-        const response = await axios.post(
-          'http://localhost:8000/api/geofence/add',
-          { farmerId, boundaryCoordinates },
-          {
-            headers: {
-              'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+      const response = await axiosInstance.post("geofence/add", {
+        farmerId,
+        boundaryCoordinates,
+      });
 
-        console.log(response.data.message); // Log the success message
-      } else {
-        throw new Error('Farmer ID is not available.');
-      }
+      console.log(response.data.message);
     } catch (err) {
-      setError(err.message);
-      console.error('Error adding geofence:', err); // Log the error message
+      setError(err.response?.data?.message || err.message);
+      console.error("Error adding geofence:", err);
     } finally {
       setLoading(false);
     }
@@ -44,24 +50,17 @@ const useGeofence = () => {
     setError(null);
 
     try {
-      const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Updating geofenceId:', geofenceId); // Log update attempt
+      validateToken();
 
-      const response = await axios.post(
-        'http://localhost:8000/api/geofence/update',
-        { geofenceId, boundaryCoordinates },
-        {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await axiosInstance.post("geofence/update", {
+        geofenceId,
+        boundaryCoordinates,
+      });
 
-      console.log(response.data.message); // Log the success message
+      console.log(response.data.message);
     } catch (err) {
-      setError(err.message);
-      console.error('Error updating geofence:', err); // Log the error message
+      setError(err.response?.data?.message || err.message);
+      console.error("Error updating geofence:", err);
     } finally {
       setLoading(false);
     }
@@ -72,51 +71,41 @@ const useGeofence = () => {
     setError(null);
 
     try {
-      const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Deleting geofenceId:', geofenceId); // Log delete attempt
+      validateToken();
 
-      const response = await axios.delete(
-        `http://localhost:8000/api/geofence/delete/${geofenceId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-          },
-        }
-      );
+      const response = await axiosInstance.delete(`geofence/delete/${geofenceId}`);
 
-      console.log(response.data.message); // Log the success message
+      console.log(response.data.message);
     } catch (err) {
-      setError(err.message);
-      console.error('Error deleting geofence:', err); // Log the error message
+      setError(err.response?.data?.message || err.message);
+      console.error("Error deleting geofence:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch all geofences for the current farmer
   const fetchGeofences = async () => {
+    if (hasFetchedGeofences.current) {
+      console.log("Geofences already fetched. Skipping request.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      if (farmerId) {
-        const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-        console.log('Fetching geofences for farmerId:', farmerId); // Log fetch attempt
+      validateToken();
 
-        const response = await axios.get(`http://localhost:8000/api/geofence/get/${farmerId}`, {
-          headers: {
-            'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
-          },
-        });
+      const response = await axiosInstance.get(`geofence/get/${farmerId}`);
 
-        setGeofences(response.data.geofences);
-        console.log('Geofences retrieved:', response.data.geofences); // Log the retrieved geofences
-      } else {
-        throw new Error('Farmer ID is not available.');
-      }
+      setGeofences(response.data.geofences);
+      console.log("Geofences retrieved:", response.data.geofences);
+
+      // Set the flag to true after the first fetch
+      hasFetchedGeofences.current = true;
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching geofences:', err); // Log the error message
+      setError(err.response?.data?.message || err.message);
+      console.error("Error fetching geofences:", err);
     } finally {
       setLoading(false);
     }
