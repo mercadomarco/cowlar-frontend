@@ -79,7 +79,7 @@ const Cows = () => {
       setCollarData({ cowId: "", collarId: "" }); // Reset the form
     } catch (err) {
       // Handle any error
-      console.error("Error adding collar:", err);
+      setCollarError("Error adding collar: " + err.message);
     }
   };
 
@@ -91,11 +91,19 @@ const Cows = () => {
           <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>
             Add Cow
           </AddCowButton>
-          <AddCollarButton onClick={() => setIsCollarModalOpen(true)}>
+          <AddCollarButton
+            onClick={() => setIsCollarModalOpen(true)}
+            disabled={unassociatedCows.length === 0} // Disable button if no unassociated cows
+          >
             Link Collar
           </AddCollarButton>
         </ButtonGroup>
       </Header>
+
+      {/* Show message if no unassociated cows */}
+      {unassociatedCows.length === 0 && (
+        <NoCowsMessage>No unassociated cows available to link a collar.</NoCowsMessage>
+      )}
 
       {/* Modal for adding a new cow */}
       {isAddCowModalOpen && (
@@ -234,6 +242,7 @@ const Cows = () => {
   );
 };
 
+
 export default Cows;
 
 // Styled components for the layout and design
@@ -294,7 +303,14 @@ const AddCollarButton = styled.button`
   &:hover {
     background-color: #0f1a6d;
   }
+
+  &:disabled {
+    background-color: #d3d3d3; /* Gray color when disabled */
+    cursor: not-allowed; /* Change cursor when disabled */
+  }
 `;
+
+
 
 const ModalOverlay = styled.div`
   position: fixed;

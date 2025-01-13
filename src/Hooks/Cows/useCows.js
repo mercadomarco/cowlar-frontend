@@ -49,8 +49,12 @@ const useCows = () => {
     setError(null); // Reset error before fetching
     try {
       const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Fetching unassociated cows for farmerId:', farmerId); // Log fetch attempt
+      if (!jwtToken) {
+        throw new Error('JWT token not found. Please log in again.');
+      }
   
+      console.log('Fetching unassociated cows for farmerId:', farmerId); // Log fetch attempt
+    
       const response = await fetch(`http://localhost:8000/api/cow/unassociated/${farmerId}`, {
         method: 'GET',
         headers: {
@@ -58,16 +62,23 @@ const useCows = () => {
           'Content-Type': 'application/json', // Optional: set content type if needed
         }
       });
-  
+    
+      // Handle 404 status explicitly to avoid throwing an error
+      if (response.status === 404) {
+        console.log('No unassociated cows found.');
+        setUnassociatedCows([]); // Set empty array when no cows are found
+        return; // Do nothing further
+      }
+    
       if (!response.ok) {
         throw new Error(`Failed to fetch unassociated cows: ${response.status} ${response.statusText}`);
       }
-  
+    
       const data = await response.json();
       console.log('Fetched unassociated cows:', data); // Log the entire response for debugging
-  
+    
       // Now referencing 'unassociatedCows' in the response
-      if (data && data.unassociatedCows) {
+      if (data && Array.isArray(data.unassociatedCows)) {
         setUnassociatedCows(data.unassociatedCows); // Set unassociated cows
       } else {
         setUnassociatedCows([]); // Handle the case where unassociatedCows is not present
