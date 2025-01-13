@@ -6,7 +6,8 @@ import useCows from "../../Hooks/Cows/useCows";
 import useCollars from "../../Hooks/Collars/useCollars";
 
 const Cows = () => {
-  const { cows, unassociatedCows, loading, error, addCow } = useCows();
+  const { cows, unassociatedCows, loading, error, addCow, deleteCows } =
+    useCows();
   const { addCollar } = useCollars();
   const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
   const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
@@ -22,6 +23,7 @@ const Cows = () => {
   });
   const [addError, setAddError] = useState(null);
   const [collarError, setCollarError] = useState(null);
+  const [dcows, setDCows] = useState([]);
 
   // Fetch cows for the dropdown
   useEffect(() => {
@@ -83,6 +85,30 @@ const Cows = () => {
     }
   };
 
+  const handleDeleteCow = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this cow? This action cannot be undone."
+    );
+    if (!confirmDelete) return;
+  
+    try {
+      // Correct the payload structure
+      const payload = {
+        cowIds: [id], // cowIds should be an array
+      };
+      console.log("Deleting cow with payload:", payload);
+  
+      // Call deleteCows with the correct payload
+      await deleteCows(payload.cowIds); // Pass only cowIds array
+  
+      // Update the cow list after successful deletion
+      setDCows((prevCows) => prevCows.filter((cow) => cow.id !== id));
+    } catch (error) {
+      console.error("Failed to delete cow:", error);
+    }
+  };
+  
+  
   return (
     <Container>
       <Header>
@@ -102,7 +128,9 @@ const Cows = () => {
 
       {/* Show message if no unassociated cows */}
       {unassociatedCows.length === 0 && (
-        <NoCowsMessage>No unassociated cows available to link a collar.</NoCowsMessage>
+        <NoCowsMessage>
+          No unassociated cows available to link a collar.
+        </NoCowsMessage>
       )}
 
       {/* Modal for adding a new cow */}
@@ -234,6 +262,9 @@ const Cows = () => {
               <p>Age: {cow.age}</p>
               <p>Birthday: {cow.birthday}</p>
               <p>Associated: {cow.associated}</p>
+              <DeleteButton onClick={() => handleDeleteCow(cow.cow_id)}>
+                Delete
+              </DeleteButton>
             </CowItem>
           ))}
         </CowsList>
@@ -241,7 +272,6 @@ const Cows = () => {
     </Container>
   );
 };
-
 
 export default Cows;
 
@@ -309,8 +339,6 @@ const AddCollarButton = styled.button`
     cursor: not-allowed; /* Change cursor when disabled */
   }
 `;
-
-
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -414,4 +442,18 @@ const CowItem = styled.div`
   margin-bottom: 10px;
   width: 96%; /* Ensures full width */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+`;
+
+const DeleteButton = styled.button`
+  background-color: #f44336;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+
+  &:hover {
+    background-color: #d32f2f;
+  }
 `;
