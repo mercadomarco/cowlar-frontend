@@ -69,6 +69,7 @@ const CowsLocation = () => {
                 <h4><strong>Name: </strong>${cow.name}</h4>
                 <p><strong>Breed:</strong> ${cow.breed}</p>
                 <p><strong>Age:</strong> ${cow.age}</p>
+                <p><strong>Status:</strong> ${cow.status}</p>
                 <p><strong>Location:</strong> ${cow.location.latitude}, ${cow.location.longitude}</p>
               </div>
             `;

@@ -6,7 +6,7 @@ import useCows from "../../Hooks/Cows/useCows";
 import useCollars from "../../Hooks/Collars/useCollars";
 
 const Cows = () => {
-  const { cows, loading, error, addCow } = useCows();
+  const { cows, unassociatedCows, loading, error, addCow } = useCows();
   const { addCollar } = useCollars();
   const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
   const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
@@ -18,7 +18,7 @@ const Cows = () => {
   });
   const [collarData, setCollarData] = useState({
     cowId: "",
-    collarId: ""
+    collarId: "",
   });
   const [addError, setAddError] = useState(null);
   const [collarError, setCollarError] = useState(null);
@@ -72,20 +72,14 @@ const Cows = () => {
 
   const handleAddCollar = async (e) => {
     e.preventDefault();
-    setCollarError(null);
 
-    // Input validation
-    if (!collarData.cowId || !collarData.collarId) {
-      setCollarError("All fields are required.");
-      return;
-    }
-
+    // Call the addCollar function with cowId and collarId
     try {
       await addCollar(collarData.cowId, collarData.collarId);
-      setCollarData({ cowId: "", collarId: "" });
-      setIsCollarModalOpen(false);
+      setCollarData({ cowId: "", collarId: "" }); // Reset the form
     } catch (err) {
-      setCollarError(err.message);
+      // Handle any error
+      console.error("Error adding collar:", err);
     }
   };
 
@@ -164,7 +158,7 @@ const Cows = () => {
         <ModalOverlay>
           <Modal>
             <ModalHeader>
-              <ModalTitle>Add a Collar</ModalTitle>
+              <ModalTitle>Add Collar to Cow</ModalTitle>
               <CloseButton onClick={() => setIsCollarModalOpen(false)}>
                 X
               </CloseButton>
@@ -174,32 +168,43 @@ const Cows = () => {
                 <label htmlFor="cowId">Cow:</label>
                 <Select
                   id="cowId"
-                  value={collarData.cowId}
-                  onChange={(e) =>
-                    setCollarData({ ...collarData, cowId: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const selectedCowId = e.target.value; // This gets the selected cow's ID
+                    console.log("Selected Cow ID:", selectedCowId); // Log the selected cow ID for verification
+                    setCollarData({
+                      ...collarData,
+                      cowId: selectedCowId, // Update the state with the selected cow's ID
+                    });
+                  }}
                 >
                   <option value="" disabled>
                     Select a cow
                   </option>
-                  {cows.map((cow) => (
-                    <option key={cow.cow_id} value={cow.cow_id}>
-                      {cow.name}
+                  {unassociatedCows.map((cow) => (
+                    <option key={cow.cowId} value={cow.cowId}>
+                      {cow.name}{" "}
+                      {/* Display cow's name, and value is the cow_id */}
                     </option>
                   ))}
                 </Select>
+
                 <label htmlFor="collarId">Collar ID:</label>
                 <Input
                   id="collarId"
                   type="text"
                   placeholder="Enter collar Id"
-                  value={collarData.latitude}
+                  value={collarData.collarId} // This is where you manage collarId in the state
                   onChange={(e) =>
-                    setCollarData({ ...collarData, collarId: e.target.value })
+                    setCollarData({
+                      ...collarData,
+                      collarId: e.target.value, // Update collarId from the input field
+                    })
                   }
                   required
                 />
+
                 <SubmitButton type="submit">Add Collar</SubmitButton>
+
                 {collarError && (
                   <ErrorMessage>Error: {collarError}</ErrorMessage>
                 )}

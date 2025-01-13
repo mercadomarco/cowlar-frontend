@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 
 const useCows = () => {
   const [cows, setCows] = useState([]);
+  const [unassociatedCows, setUnassociatedCows] = useState([]); // New state for unassociated cows
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const hasFetched = useRef(false); // Create a ref to track if cows have been fetched
@@ -15,7 +16,7 @@ const useCows = () => {
     setError(null); // Reset error before fetching
     try {
       const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
-      console.log('Fetching cows for farmerId:', farmerId); // Log fetch attempt
+      // console.log('Fetching cows for farmerId:', farmerId); // Log fetch attempt
 
       const response = await fetch(`http://localhost:8000/api/cow/get/${farmerId}`, {
         method: 'GET',
@@ -42,6 +43,45 @@ const useCows = () => {
     }
   };
 
+  // New function to fetch unassociated cows
+  const fetchUnassociatedCows = async (farmerId) => {
+    setLoading(true);
+    setError(null); // Reset error before fetching
+    try {
+      const jwtToken = localStorage.getItem('jwt_token'); // Get JWT token from localStorage
+      console.log('Fetching unassociated cows for farmerId:', farmerId); // Log fetch attempt
+  
+      const response = await fetch(`http://localhost:8000/api/cow/unassociated/${farmerId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`, // Use JWT token for authorization
+          'Content-Type': 'application/json', // Optional: set content type if needed
+        }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Failed to fetch unassociated cows: ${response.status} ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      console.log('Fetched unassociated cows:', data); // Log the entire response for debugging
+  
+      // Now referencing 'unassociatedCows' in the response
+      if (data && data.unassociatedCows) {
+        setUnassociatedCows(data.unassociatedCows); // Set unassociated cows
+      } else {
+        setUnassociatedCows([]); // Handle the case where unassociatedCows is not present
+        console.warn('No unassociated cows found or invalid response format');
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching unassociated cows:', err); // Log the error message
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
   useEffect(() => {
     const farmerId = localStorage.getItem('farmer_id'); // Retrieve farmerId from local storage
     console.log('Current farmerId:', farmerId); // Log the farmerId to check if it is null or valid
@@ -49,6 +89,7 @@ const useCows = () => {
     // Only fetch cows if farmerId is valid and has not been fetched yet
     if (farmerId) {
       fetchCows(farmerId); // Fetch cows with the farmerId
+      fetchUnassociatedCows(farmerId); // Fetch unassociated cows with the farmerId
     } else {
       console.log('farmerId is null or undefined, skipping fetch'); // Log if farmerId is invalid
       setLoading(false); // Stop loading if farmerId is invalid
@@ -97,7 +138,7 @@ const useCows = () => {
     }
   };
 
-  return { cows, loading, error, addCow }; // Return addCow function along with cows, loading, and error states
+  return { cows, unassociatedCows, loading, error, addCow }; // Return unassociatedCows along with other states
 };
 
 export default useCows;
