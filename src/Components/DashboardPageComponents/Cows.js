@@ -6,18 +6,24 @@ import useCows from "../../Hooks/Cows/useCows";
 import useCollars from "../../Hooks/Collars/useCollars";
 
 const Cows = () => {
-  const { cows, loading, error, addCow } = useCows();
+  const { cows, unassociatedCows, loading, error, addCow, deleteCows } =
+    useCows();
   const { addCollar } = useCollars();
   const [isAddCowModalOpen, setIsAddCowModalOpen] = useState(false);
   const [isCollarModalOpen, setIsCollarModalOpen] = useState(false);
-  const [newCow, setNewCow] = useState({ name: "", breed: "", age: "", birthday: "" });
+  const [newCow, setNewCow] = useState({
+    name: "",
+    breed: "",
+    age: "",
+    birthday: "",
+  });
   const [collarData, setCollarData] = useState({
     cowId: "",
-    latitude: "",
-    longitude: "",
+    collarId: "",
   });
   const [addError, setAddError] = useState(null);
   const [collarError, setCollarError] = useState(null);
+  const [dcows, setDCows] = useState([]);
 
   // Fetch cows for the dropdown
   useEffect(() => {
@@ -68,24 +74,38 @@ const Cows = () => {
 
   const handleAddCollar = async (e) => {
     e.preventDefault();
-    setCollarError(null);
 
-    // Input validation
-    if (!collarData.cowId || !collarData.latitude || !collarData.longitude) {
-      setCollarError("All fields are required.");
-      return;
+    // Call the addCollar function with cowId and collarId
+    try {
+      await addCollar(collarData.cowId, collarData.collarId);
+      setCollarData({ cowId: "", collarId: "" }); // Reset the form
+      setCollarError(null);
+    } catch (err) {
+      // Handle any error
+      setCollarError("Error adding collar: " + err.message);
     }
+  };
+
+  const handleDeleteCow = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this cow? This action cannot be undone."
+    );
+    if (!confirmDelete) return;
 
     try {
-      await addCollar(
-        collarData.cowId,
-        collarData.latitude,
-        collarData.longitude
-      );
-      setCollarData({ cowId: "", latitude: "", longitude: "" });
-      setIsCollarModalOpen(false);
-    } catch (err) {
-      setCollarError(err.message);
+      // Correct the payload structure
+      const payload = {
+        cowIds: [id], // cowIds should be an array
+      };
+      console.log("Deleting cow with payload:", payload);
+
+      // Call deleteCows with the correct payload
+      await deleteCows(payload.cowIds); // Pass only cowIds array
+
+      // Update the cow list after successful deletion
+      setDCows((prevCows) => prevCows.filter((cow) => cow.id !== id));
+    } catch (error) {
+      console.error("Failed to delete cow:", error);
     }
   };
 
@@ -94,18 +114,34 @@ const Cows = () => {
       <Header>
         <Title>My Cows</Title>
         <ButtonGroup>
-          <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>Add Cow</AddCowButton>
-          <AddCollarButton onClick={() => setIsCollarModalOpen(true)}>Add Collar</AddCollarButton>
+          <AddCowButton onClick={() => setIsAddCowModalOpen(true)}>
+            Add Cow
+          </AddCowButton>
+          <AddCollarButton
+            onClick={() => setIsCollarModalOpen(true)}
+            disabled={unassociatedCows.length === 0} // Disable button if no unassociated cows
+          >
+            Link Collar
+          </AddCollarButton>
         </ButtonGroup>
       </Header>
+
+      {/* Show message if no unassociated cows */}
+      {unassociatedCows.length === 0 && (
+        <NoCowsMessage>
+          No unassociated cows available to link a collar.
+        </NoCowsMessage>
+      )}
 
       {/* Modal for adding a new cow */}
       {isAddCowModalOpen && (
         <ModalOverlay>
           <Modal>
             <ModalHeader>
-              <ModalTitle>Add a New Cow</ModalTitle>
-              <CloseButton onClick={() => setIsAddCowModalOpen(false)}>X</CloseButton>
+              <ModalTitle>Add Cow</ModalTitle>
+              <CloseButton onClick={() => setIsAddCowModalOpen(false)}>
+                X
+              </CloseButton>
             </ModalHeader>
             <ModalBody>
               <AddCowForm onSubmit={handleAddCow}>
@@ -113,28 +149,36 @@ const Cows = () => {
                   type="text"
                   placeholder="Name"
                   value={newCow.name}
-                  onChange={(e) => setNewCow({ ...newCow, name: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, name: e.target.value })
+                  }
                   required
                 />
                 <Input
                   type="text"
                   placeholder="Breed"
                   value={newCow.breed}
-                  onChange={(e) => setNewCow({ ...newCow, breed: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, breed: e.target.value })
+                  }
                   required
                 />
                 <Input
                   type="number"
                   placeholder="Age"
                   value={newCow.age}
-                  onChange={(e) => setNewCow({ ...newCow, age: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, age: e.target.value })
+                  }
                   required
                 />
-                 <Input
-                  type="text"
+                <Input
+                  type="date"
                   placeholder="Birthday"
                   value={newCow.birthday}
-                  onChange={(e) => setNewCow({ ...newCow, birthday: e.target.value })}
+                  onChange={(e) =>
+                    setNewCow({ ...newCow, birthday: e.target.value })
+                  }
                   required
                 />
                 <SubmitButton type="submit">Add Cow</SubmitButton>
@@ -150,40 +194,56 @@ const Cows = () => {
         <ModalOverlay>
           <Modal>
             <ModalHeader>
-              <ModalTitle>Add a Collar</ModalTitle>
-              <CloseButton onClick={() => setIsCollarModalOpen(false)}>X</CloseButton>
+              <ModalTitle>Add Collar to Cow</ModalTitle>
+              <CloseButton onClick={() => setIsCollarModalOpen(false)}>
+                X
+              </CloseButton>
             </ModalHeader>
             <ModalBody>
               <AddCollarForm onSubmit={handleAddCollar}>
                 <label htmlFor="cowId">Cow:</label>
                 <Select
                   id="cowId"
-                  value={collarData.cowId}
-                  onChange={(e) => setCollarData({ ...collarData, cowId: e.target.value })}
+                  value={collarData.cowId} // Ensure the select input reflects the state
+                  onChange={(e) => {
+                    const selectedCowId = e.target.value; // Get the selected cow's ID
+                    console.log("Selected Cow ID:", selectedCowId); // Log the selected cow ID for debugging
+                    setCollarData({
+                      ...collarData,
+                      cowId: selectedCowId, // Update the state with the selected cow's ID
+                    });
+                  }}
                 >
-                  <option value="" disabled>Select a cow</option>
-                  {cows.map((cow) => (
-                    <option key={cow.cow_id} value={cow.cow_id}>
-                      {cow.name}
+                  <option value="">
+                    Select a cow
+                  </option>
+                  {unassociatedCows.map((cow) => (
+                    <option key={cow.cowId} value={cow.cowId}>
+                      {cow.name} {/* Display cow's name, value is the cow_id */}
                     </option>
                   ))}
                 </Select>
+
+                <label htmlFor="collarId">Collar ID:</label>
                 <Input
+                  id="collarId"
                   type="text"
-                  placeholder="Latitude"
-                  value={collarData.latitude}
-                  onChange={(e) => setCollarData({ ...collarData, latitude: e.target.value })}
+                  placeholder="Enter collar ID"
+                  value={collarData.collarId} // Manage collarId in the state
+                  onChange={(e) =>
+                    setCollarData({
+                      ...collarData,
+                      collarId: e.target.value, // Update collarId from the input field
+                    })
+                  }
                   required
                 />
-                <Input
-                  type="text"
-                  placeholder="Longitude"
-                  value={collarData.longitude}
-                  onChange={(e) => setCollarData({ ...collarData, longitude: e.target.value })}
-                  required
-                />
+
                 <SubmitButton type="submit">Add Collar</SubmitButton>
-                {collarError && <ErrorMessage>Error: {collarError}</ErrorMessage>}
+
+                {collarError && (
+                  <ErrorMessage>Error: {collarError}</ErrorMessage>
+                )}
               </AddCollarForm>
             </ModalBody>
           </Modal>
@@ -201,6 +261,10 @@ const Cows = () => {
               <p>Breed: {cow.breed}</p>
               <p>Age: {cow.age}</p>
               <p>Birthday: {cow.birthday}</p>
+              <p>Associated: {cow.associated}</p>
+              <DeleteButton onClick={() => handleDeleteCow(cow.cow_id)}>
+                Delete
+              </DeleteButton>
             </CowItem>
           ))}
         </CowsList>
@@ -268,6 +332,11 @@ const AddCollarButton = styled.button`
 
   &:hover {
     background-color: #0f1a6d;
+  }
+
+  &:disabled {
+    background-color: #d3d3d3; /* Gray color when disabled */
+    cursor: not-allowed; /* Change cursor when disabled */
   }
 `;
 
@@ -373,4 +442,18 @@ const CowItem = styled.div`
   margin-bottom: 10px;
   width: 96%; /* Ensures full width */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+`;
+
+const DeleteButton = styled.button`
+  background-color: #f44336;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+
+  &:hover {
+    background-color: #d32f2f;
+  }
 `;
