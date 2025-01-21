@@ -79,6 +79,7 @@ const Cows = () => {
     try {
       await addCollar(collarData.cowId, collarData.collarId);
       setCollarData({ cowId: "", collarId: "" }); // Reset the form
+      setCollarError(null);
     } catch (err) {
       // Handle any error
       setCollarError("Error adding collar: " + err.message);
@@ -90,25 +91,24 @@ const Cows = () => {
       "Are you sure you want to delete this cow? This action cannot be undone."
     );
     if (!confirmDelete) return;
-  
+
     try {
       // Correct the payload structure
       const payload = {
         cowIds: [id], // cowIds should be an array
       };
       console.log("Deleting cow with payload:", payload);
-  
+
       // Call deleteCows with the correct payload
       await deleteCows(payload.cowIds); // Pass only cowIds array
-  
+
       // Update the cow list after successful deletion
       setDCows((prevCows) => prevCows.filter((cow) => cow.id !== id));
     } catch (error) {
       console.error("Failed to delete cow:", error);
     }
   };
-  
-  
+
   return (
     <Container>
       <Header>
@@ -204,22 +204,22 @@ const Cows = () => {
                 <label htmlFor="cowId">Cow:</label>
                 <Select
                   id="cowId"
+                  value={collarData.cowId} // Ensure the select input reflects the state
                   onChange={(e) => {
-                    const selectedCowId = e.target.value; // This gets the selected cow's ID
-                    console.log("Selected Cow ID:", selectedCowId); // Log the selected cow ID for verification
+                    const selectedCowId = e.target.value; // Get the selected cow's ID
+                    console.log("Selected Cow ID:", selectedCowId); // Log the selected cow ID for debugging
                     setCollarData({
                       ...collarData,
                       cowId: selectedCowId, // Update the state with the selected cow's ID
                     });
                   }}
                 >
-                  <option value="" disabled>
+                  <option value="">
                     Select a cow
                   </option>
                   {unassociatedCows.map((cow) => (
                     <option key={cow.cowId} value={cow.cowId}>
-                      {cow.name}{" "}
-                      {/* Display cow's name, and value is the cow_id */}
+                      {cow.name} {/* Display cow's name, value is the cow_id */}
                     </option>
                   ))}
                 </Select>
@@ -228,8 +228,8 @@ const Cows = () => {
                 <Input
                   id="collarId"
                   type="text"
-                  placeholder="Enter collar Id"
-                  value={collarData.collarId} // This is where you manage collarId in the state
+                  placeholder="Enter collar ID"
+                  value={collarData.collarId} // Manage collarId in the state
                   onChange={(e) =>
                     setCollarData({
                       ...collarData,

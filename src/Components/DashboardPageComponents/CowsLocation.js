@@ -1,70 +1,153 @@
-import React, { useEffect, useRef } from 'react';
-import styled from 'styled-components';
-import { Map, View } from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
-import Overlay from 'ol/Overlay';
-import { fromLonLat, get as getProjection } from 'ol/proj';
-import 'ol/ol.css';
-import useLocations from '../../Hooks/Locations/useLocations';
-import { Circles } from 'react-loader-spinner';
-import { ImLocation } from 'react-icons/im';
-import ReactDOMServer from 'react-dom/server';
-import { extend as extendExtent, createEmpty as createEmptyExtent } from 'ol/extent'; // For calculating bounds
+import React, { useEffect, useRef } from "react";
+import styled from "styled-components";
+import { Map as OLMap, View } from "ol";
+import TileLayer from "ol/layer/Tile";
+import OSM from "ol/source/OSM";
+import VectorLayer from "ol/layer/Vector";
+import VectorSource from "ol/source/Vector";
+import { Feature } from "ol";
+import { LineString } from "ol/geom";
+import { Stroke, Style } from "ol/style";
+import Overlay from "ol/Overlay";
+import { fromLonLat } from "ol/proj";
+import { boundingExtent } from "ol/extent";
+import "ol/ol.css";
+import ReactDOMServer from "react-dom/server";
+import { ImLocation } from "react-icons/im";
+import useGeofence from "../../Hooks/Geofence/useGeofence";
+import useLocations from "../../Hooks/Locations/useLocations";
 
 const CowsLocation = () => {
-  const { cowLocations, loading, error } = useLocations();
-  const mapRef = useRef(); // Reference to the map container div
-  const mapInstanceRef = useRef(null); // To track the map instance
-  const overlayRef = useRef([]); // Initialize as an empty array to store overlays
+  const mapRef = useRef(null);
+  const mapInstance = useRef(null);
+  const geofenceLayer = useRef(null);
+  const cowLayer = useRef(null);
+  const { geofences, getGeofence } = useGeofence();
+  const { cowLocations } = useLocations(); // Removed `loading` and `error` since they are not used
 
   useEffect(() => {
-    if (!mapInstanceRef.current && mapRef.current) {
-      // Initialize the map
-      const map = new Map({
-        target: mapRef.current, // Attach the map to the div element
+    if (!mapInstance.current) {
+      mapInstance.current = new OLMap({
+        target: mapRef.current,
         layers: [
           new TileLayer({
             source: new OSM(),
           }),
         ],
         view: new View({
-          center: fromLonLat([121.7740, 12.8797]), // Default center
-          zoom: 16, // Default zoom
+          center: [13510780.61, 1603044.05], // Example coordinates
+          zoom: 5,
         }),
-        controls: [], // Disable default controls
+      });
+    }
+
+    // Fetch geofences when the component mounts
+    getGeofence();
+  }, [getGeofence]);
+
+  useEffect(() => {
+    if (geofences.length > 0 && mapInstance.current) {
+      // Remove the old layer if it exists
+      if (geofenceLayer.current) {
+        mapInstance.current.removeLayer(geofenceLayer.current);
+      }
+
+      // Create a new vector source for geofences
+      const vectorSource = new VectorSource();
+
+      // Array to store all coordinates for extent calculation
+      let allCoordinates = [];
+
+      geofences.forEach((geofence) => {
+        const coordinates = geofence.boundaryCoordinates.map((coord) => [
+          coord.longitude,
+          coord.latitude,
+        ]);
+
+        // Close the loop by appending the first coordinate to the end
+        if (coordinates.length > 0) {
+          coordinates.push(coordinates[0]);
+        }
+
+        allCoordinates = [...allCoordinates, ...coordinates];
+
+        const lineString = new LineString(coordinates).transform(
+          "EPSG:4326",
+          "EPSG:3857"
+        );
+
+        const feature = new Feature({ geometry: lineString });
+        vectorSource.addFeature(feature);
       });
 
-      // Extend extent to dynamically fit all cow markers
-      let extent = createEmptyExtent(); // Initialize an empty extent
+      // Add the vector layer to the map
+      geofenceLayer.current = new VectorLayer({
+        source: vectorSource,
+        style: new Style({
+          stroke: new Stroke({
+            color: "rgba(255, 0, 0, 0.8)",
+            width: 3,
+          }),
+        }),
+      });
 
-      cowLocations
-        .filter(cow => cow.location && cow.location.latitude && cow.location.longitude)
-        .forEach(cow => {
-          const lonLat = fromLonLat([cow.location.longitude, cow.location.latitude]);
+      mapInstance.current.addLayer(geofenceLayer.current);
 
-          // Extend the extent to include this marker's position
-          extendExtent(extent, [lonLat[0], lonLat[1], lonLat[0], lonLat[1]]);
+      // Calculate the extent and fit the map view
+      if (allCoordinates.length > 0) {
+        const transformedCoordinates = allCoordinates.map((coord) =>
+          fromLonLat(coord)
+        );
 
+        const extent = boundingExtent(transformedCoordinates);
+        mapInstance.current.getView().fit(extent, {
+          duration: 1000,
+          padding: [50, 50, 50, 50],
+        });
+      }
+    }
+  }, [geofences]);
+
+  useEffect(() => {
+    if (cowLocations.length > 0 && mapInstance.current) {
+      // Remove the old layer if it exists
+      if (cowLayer.current) {
+        mapInstance.current.removeLayer(cowLayer.current);
+      }
+  
+      const vectorSource = new VectorSource();
+  
+      cowLocations.forEach((cow) => {
+        if (cow.location && cow.location.latitude && cow.location.longitude) {
+          const coordinates = [
+            cow.location.longitude,
+            cow.location.latitude,
+          ];
+  
+          const lonLat = fromLonLat(coordinates);
+  
           // Create overlay for each cow's location
-          const locationElement = document.createElement('div');
-          locationElement.innerHTML = `<div style="font-size: 24px; color: green;">${ReactDOMServer.renderToString(<ImLocation />)}</div>`; // Render the icon
-          
+          const locationElement = document.createElement("div");
+          locationElement.innerHTML = `<div style="font-size: 24px; color: green;">${ReactDOMServer.renderToString(
+            <ImLocation />
+          )}</div>`; // Render the icon
+  
           const overlay = new Overlay({
-            position: lonLat, // Position the overlay
-            positioning: 'center-center',
+            position: lonLat,
+            positioning: "center-center",
             element: locationElement,
             stopEvent: false,
           });
-
-          // Add the overlay to the map and the array
-          map.addOverlay(overlay);
-          overlayRef.current.push(overlay); // Store the overlay in the array
-
+  
+          mapInstance.current.addOverlay(overlay);
+  
+          let detailOverlay = null;
+  
           // Add mouseover event to show cow details
-          locationElement.addEventListener('mouseover', (event) => {
-            const detailsElement = document.createElement('div');
-            detailsElement.innerHTML = `
+          locationElement.addEventListener("mouseover", (event) => {
+            // Show the details when hovering over the marker
+            const detailsElement = document.createElement("div");
+            detailsElement.innerHTML = ` 
               <div style="background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);">
                 <h4><strong>Name: </strong>${cow.name}</h4>
                 <p><strong>Breed:</strong> ${cow.breed}</p>
@@ -73,115 +156,68 @@ const CowsLocation = () => {
                 <p><strong>Location:</strong> ${cow.location.latitude}, ${cow.location.longitude}</p>
               </div>
             `;
-            const detailOverlay = new Overlay({
+  
+            detailOverlay = new Overlay({
               element: detailsElement,
-              positioning: 'bottom-center', // Position above the cursor
+              positioning: "bottom-center",
               stopEvent: true,
             });
-
-            // Get cursor position relative to the map
+  
             const mapElement = mapRef.current;
             const mousePosition = mapElement.getBoundingClientRect();
             const cursorX = event.clientX - mousePosition.left;
-            const cursorY = event.clientY - mousePosition.top - 10; // Offset above the cursor
-
-            detailOverlay.setPosition(map.getCoordinateFromPixel([cursorX, cursorY])); // Set the position based on the cursor
-            map.addOverlay(detailOverlay);
-            overlayRef.current.push(detailOverlay); // Store the details overlay in the array
-
-            // Add mouseout event to hide cow details
-            locationElement.addEventListener('mouseout', () => {
-              detailOverlay.setPosition(undefined); // Hide the details overlay
-            });
+            const cursorY = event.clientY - mousePosition.top - 10;
+  
+            detailOverlay.setPosition(
+              mapInstance.current.getCoordinateFromPixel([cursorX, cursorY])
+            );
+            mapInstance.current.addOverlay(detailOverlay);
           });
-        });
-
-      // If we have valid cow locations, adjust the map view to fit the extent
-      if (!isExtentEmpty(extent)) {
-        map.getView().fit(extent, {
-          size: map.getSize(), // Size of the map
-          maxZoom: 18, // Maximum zoom level
-          duration: 1000, // Animation duration (optional)
-        });
-      }
-
-      // Store the map instance reference
-      mapInstanceRef.current = map;
+  
+          // Add mouseout event to hide cow details
+          locationElement.addEventListener("mouseout", () => {
+            if (detailOverlay) {
+              mapInstance.current.removeOverlay(detailOverlay); // Remove the details when the mouse leaves
+              detailOverlay = null;
+            }
+          });
+        }
+      });
+  
+      cowLayer.current = new VectorLayer({
+        source: vectorSource,
+      });
+  
+      mapInstance.current.addLayer(cowLayer.current);
     }
-
-    // Clean up the map when the component unmounts
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.setTarget(null); // Detach map from the DOM
-        mapInstanceRef.current = null; // Remove map reference
-      }
-    };
   }, [cowLocations]);
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Circles
-          height="40"
-          width="40"
-          color="#121481"
-          ariaLabel="circles-loading"
-          visible={true}
-        />
-      </div>
-    );
-  }
-
-  if (error) return <p>Error: {error}</p>;
+  
 
   return (
     <Container>
-      <Header>
-        <Title>Cows Location</Title>
-      </Header>
-
-      <InteractiveMap>
-        <StyledMapContainer ref={mapRef} />
-      </InteractiveMap>
+      <Title>Geofence and Cows Map</Title>
+      <MapContainer ref={mapRef}></MapContainer>
     </Container>
   );
-};
-
-export default CowsLocation;
-
-// Helper function to check if the extent is empty
-const isExtentEmpty = (extent) => {
-  return extent[0] === Infinity || extent[1] === Infinity || extent[2] === -Infinity || extent[3] === -Infinity;
 };
 
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 20px;
-  margin-top: 30px;
-  overflow-y: auto;
-  font-family: 'Poppins';
-`;
-
-const Header = styled.header`
-  display: flex;
-  justify-content: center;
   align-items: center;
+  margin-top: 20px;
 `;
 
 const Title = styled.h1`
   font-size: 2em;
   color: #333;
+  margin-top: 50px;
 `;
 
-const InteractiveMap = styled.div`
+const MapContainer = styled.div`
+  width: 100%;
+  height: 500px;
   margin-top: 20px;
 `;
 
-const StyledMapContainer = styled.div`
-  height: 500px;
-  width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-`;
+export default CowsLocation;
